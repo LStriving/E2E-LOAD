@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import src.models.losses as losses
 import src.utils.distributed as du
 import src.utils.logging as logging
-from src.models.video_model_builder import MViT
+from slowfast.models.video_model_builder import MViT
 
 from .build import MODEL_REGISTRY
 

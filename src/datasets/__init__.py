@@ -3,6 +3,7 @@
 
 from .build import DATASET_REGISTRY, build_dataset  # noqa
 from .thumos import Thumos # noqa
+from .surgery import Surgery
 from .tvseries import Tvseries  # noqa
 from .hdd import Hdd  # noqa
 

@@ -232,7 +232,11 @@ def load_image_lists(
                 for frame in chunk_indices[findice]: 
                     if cfg.DATA.PATH_PREFIX == "hdd":
                         frame += 1
-                    fname = cfg.DATA.FRAME_TEMPL.format(frame)
+                    if cfg.TRAIN.DATASET == "Surgery":
+                        vid = video_path.split('/')[-1]
+                        fname = cfg.DATA.FRAME_TEMPL.format(vid, frame-1)
+                    else:
+                        fname = cfg.DATA.FRAME_TEMPL.format(frame)
                     path = os.path.join(video_path, fname)
                     work_frames.append(path)
 

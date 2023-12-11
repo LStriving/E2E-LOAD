@@ -869,7 +869,7 @@ _C.DATA.TEST_SESSION_SET = None
 
 # The path to the data directory.
 _C.DATA.PATH_TO_DATA_DIR = (
-    "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-vacv/caoshuqiang/data"
+    "/mnt/cephfs/home/liyirui/project/E2E-LOAD/data"
 )
 
 # Which dataset is loaded.
@@ -885,6 +885,7 @@ _C.DATA.TARGET_FORDER = "targets"
 
 # dataset info;
 _C.DATA.DATA_INFO = "data/data_info.json"
+# _C.DATA.DATA_INFO = "data/debug_data.json"
 
 # The number of frames of the input clip.
 # _C.DATA.NUM_FRAMES = 8

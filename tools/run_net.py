@@ -2,6 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import pdb
 
+import sys
+sys.path.append("/mnt/cephfs/home/liyirui/project/E2E-LOAD")
+sys.path.append("/mnt/cephfs/home/liyirui/project/slowfast")
+
 """Wrapper to train and test a video classification model."""
 from src.config.defaults import assert_and_infer_cfg
 from src.utils.misc import launch_job

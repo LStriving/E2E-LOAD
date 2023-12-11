@@ -13,7 +13,7 @@ import src.utils.misc as misc
 from src.models import head_helper
 from src.models.attention import attention_pool
 from src.models.utils import calc_mvit_feature_geometry
-from src.models.video_model_builder import MViT
+from slowfast.models.video_model_builder import MViT
 
 from . import head_helper, operators, resnet_helper, stem_helper  # noqa
 from .build import MODEL_REGISTRY
