@@ -9,4 +9,4 @@ data/
 *log*
 
 # checkpoints
-epoch_*.pyth
+*epoch_*.pyth
