@@ -78,7 +78,7 @@ def demo(cfg):
         target_root = os.path.join(data_root, cfg.DATA.TARGET_FORDER)
 
         video_path = os.path.join(data_root, cfg.DATA.VIDEO_FORDER, session)
-        target_path = os.path.join(target_root, session + ".npy")    
+        target_path = os.path.join(target_root, session + ".npy")
         
         # Load the related targets; 
         target = np.load(target_path)
@@ -135,8 +135,8 @@ def demo(cfg):
                             
                             if cfg.DATA.PATH_PREFIX == "hdd":
                                 frame += 1
-                            
-                            fname = cfg.DATA.FRAME_TEMPL.format(frame)
+                            print(frame)
+                            fname = cfg.DATA.FRAME_TEMPL.format(session,frame)
                             path = os.path.join(video_path, fname)
                             work_frames.append(path)
                         work_target.append(target[indice]) 
@@ -148,7 +148,7 @@ def demo(cfg):
                         if cfg.DATA.PATH_PREFIX == "hdd":
                             frame += 1
                         
-                        fname = cfg.DATA.FRAME_TEMPL.format(frame)
+                        fname = cfg.DATA.FRAME_TEMPL.format(session,frame)
                         path = os.path.join(video_path, fname)
                         work_frames.append(path)
                     work_target.append(target[indice]) 
@@ -216,6 +216,15 @@ def demo(cfg):
                     single_gt.extend(work_target)
         
         assert {len(single_pred), num_chunks, len(single_gt)}
+        
+        # save the predicted results(no gt);
+        single_pred = np.array(single_pred)
+        save_dir = save_path + '/result'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        np.save(save_dir + "/" + session + '.npy', single_pred)
+
+        
         # performing the single test
         
         result = evalution.eval_perframe(
