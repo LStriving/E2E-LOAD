@@ -6,16 +6,18 @@ TRAIN:
   CHECKPOINT_PERIOD: 1
   AUTO_RESUME: False
   PRINT_VERPOSE: False
-  CHECKPOINT_FILE_PATH: ckpt/MViTv2_S_16x4_k400_f302660347.pyth
+  CHECKPOINT_FILE_PATH: ckpt/checkpoint_epoch_00018.pyth
   CHECKPOINT_TYPE: "pytorch"
   AUTO_RESUME: False
   EVAL_START_EPOCH: 8 
 
 DATA:
   USE_OFFSET_SAMPLING: True
+  TARGET_FORDER: 'targets/masked_8'
   FRAME_TEMPL: '{}_{}.jpg'
+  DATA_INFO: 'data/data_info.json'
   DECODING_BACKEND: torchvision
-  SAMPLING_RATE: 4 
+  SAMPLING_RATE: 4
   TRAIN_JITTER_SCALES: [256, 320]
   TRAIN_CROP_SIZE: 224
   TEST_CROP_SIZE: 224
@@ -70,7 +72,7 @@ MVIT:
   TEMPORAL:
     DEPTH: 11
     DIM_MUL: [[9, 2.0]]
-    HEAD_MUL: [[9, 2.0]]
+    HEAD_MUL: [[9, 2.0]]    
     POOL_Q_STRIDE: [
                       [0, 1, 1, 1],
                       [1, 1, 1, 1],
@@ -89,23 +91,23 @@ MVIT:
     DETACH: True
     DEPTH: 4
     DIM_MUL: [[2, 2.0]]
-    HEAD_MUL: [[2, 2.0]]
-    POOL_KV_STRIDE_ADAPTIVE: []
+    HEAD_MUL: [[2, 2.0]] 
+    POOL_KV_STRIDE_ADAPTIVE: [] 
+    
     POOL_Q_STRIDE: [ 
-
                       [0, 2, 1, 1],
                       [1, 2, 1, 1],
                       [2, 1, 2, 2],
                       [3, 1, 1, 1],
                     ]
-    START_LAYER: 12
+    START_LAYER: 12 
     REL_POS_SPATIAL: True
     REL_POS_TEMPORAL: True
 
   FUSION:
     DROPOUT_RATE: 0.2
-    EARLY_FUSION_LAYERS: [5]
-    EARLY_FUSION_TYPE: 'ca'
+    EARLY_FUSION_LAYERS: [5] 
+    EARLY_FUSION_TYPE: 'ca'  
 
     INTERACTION: 
       LAYER_SCALE_INIT_VALUE: 0.5
@@ -117,7 +119,7 @@ MVIT:
       LAYER_SCALE_INIT_VALUE: 0.
       REL_POS_TEMPORAL: True
       REL_POS_SPATIAL: True
-
+      
 AUG:
   NUM_SAMPLE: 1
   ENABLE: True
@@ -170,9 +172,9 @@ MODEL:
   MODEL_NAME: STMViT
   LOSS_FUNC: multi_ce 
   DROPOUT_RATE: 0.5
-  LONG_MEMORY_SECONDS: 512.0
-  LONG_MEMORY_SAMPLE_RATE: 4 
-  WORK_MEMORY_SECONDS:  8.0
+  LONG_MEMORY_SECONDS: 32.0
+  LONG_MEMORY_SAMPLE_RATE: 4
+  WORK_MEMORY_SECONDS: 8.0
   WORK_MEMORY_SAMPLE_RATE: 1 
   MODE: 'DEBUG'
   CASUAL_MASK_ENABLE: True 
@@ -185,15 +187,15 @@ MODEL:
 TEST:
   ENABLE: False
   DATASET: Surgerybatchinference
-  BATCH_SIZE: 7
+  BATCH_SIZE: 1
   NUM_SPATIAL_CROPS: 1 
   NUM_ENSEMBLE_VIEWS: 1 
   PRINT_VERPOSE: True
-  CHECKPOINT_FILE_PATH: checkpoints/checkpoint_epoch_00037.pyth
+  CHECKPOINT_FILE_PATH: ckpt/checkpoint_epoch_00018.pyth
 
 DEMO:
   ENABLE: True
-  INPUT_VIDEO: ['video_validation_0000690']
+  INPUT_VIDEO: ['102', '103', '111', '112', '114', '116', '120', '122', '126', '135', '147', '153', '154', '16', '234', '241', '243', '252', '253', '255', '257', '281', '287', '31', '33', '34', '53', '63', '66', '74', '78', '84', '86', '92', '93', '94', '96'] # valid when all test is false
   CACHE_INFERENCE: True 
   ALL_TEST: True 
 
@@ -204,4 +206,4 @@ DATA_LOADER:
 NUM_GPUS: 1
 NUM_SHARDS: 1
 RNG_SEED: 0
-OUTPUT_DIR: outputs/Surgery/MVITv2_S_16x4_stream
+OUTPUT_DIR: outputs/Surgery/benchmark
