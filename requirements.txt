@@ -7,6 +7,3 @@ moviepy==1.0.3
 Cython==3.0.0
 tensorboard==2.13.0
 iopath==0.1.9
-fairscale==0.4.13
--e git+https://github.com/pytorch/fairseq@100cd91db19bb27277a06a25eb4154c805b10189#egg=fairseq
-pytorchvideo @ git+https://github.com/facebookresearch/pytorchvideo.git@eb04d1b21e08cfd0713164c0907aeb4c98fd83af
