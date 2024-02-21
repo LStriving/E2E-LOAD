@@ -9,6 +9,6 @@ fairscale==0.4.13
 tensorboard==2.13.0
 iopath==0.1.9
 -e git+https://github.com/pytorch/fairseq@100cd91db19bb27277a06a25eb4154c805b10189#egg=fairseq
-"git+https://github.com/facebookresearch/pytorchvideo.git"
-'git+https://github.com/facebookresearch/fvcore.git'
-'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+-e git+https://github.com/facebookresearch/pytorchvideo.git
+-e git+https://github.com/facebookresearch/fvcore.git
+-e git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI
