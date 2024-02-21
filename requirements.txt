@@ -8,3 +8,4 @@ Cython==3.0.0
 tensorboard==2.13.0
 iopath==0.1.9
 decord==0.6.0
+tqdm
