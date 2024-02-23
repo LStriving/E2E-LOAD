@@ -70,11 +70,11 @@ def demo(cfg):
     gt_targets = {}
     
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    save_path = osp.splitext(cfg.TEST.CHECKPOINT_FILE_PATH)[0] + '_' + stamp
+    save_path = cfg.OUTPUT_DIR + '_'
     
     # loading the video info; 
     for idx, session in enumerate(sessions):
-        data_root = os.path.join(cfg.DATA.PATH_TO_DATA_DIR, cfg.DATA.PATH_PREFIX)
+        data_root = os.path.join(cfg.DATA.PATH_TO_DATA_DIR)
         target_root = os.path.join(data_root, cfg.DATA.TARGET_FORDER)
 
         video_path = os.path.join(data_root, cfg.DATA.VIDEO_FORDER, session)
@@ -219,37 +219,38 @@ def demo(cfg):
         
         # save the predicted results(no gt);
         single_pred = np.array(single_pred)
-        save_dir = save_path + '/result'
+        save_dir = save_path
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         np.save(save_dir + "/" + session + '.npy', single_pred)
 
         
         # performing the single test
-        
-        result = evalution.eval_perframe(
+        if cfg.DEMO.BENCHMARK:
+            result = evalution.eval_perframe(
+                    cfg,
+                    single_gt,
+                    single_pred,
+            )       
+            
+            logger.info('Process: {}/{}'.format(idx+1, num_video))
+            logger.info('Video Info: name: {}, num_chunks: {} mAP: {}'.format(session, num_chunks, result["mean_AP"]))
+
+            pred_scores[session] = single_pred
+            gt_targets[session] = single_gt
+
+    if cfg.DEMO.BENCHMARK:
+        logger.info('Performing the Last Test.')
+        results = evalution.eval_perframe(
                 cfg,
-                single_gt,
-                single_pred,
-        )       
-        
-        logger.info('Process: {}/{}'.format(idx+1, num_video))
-        logger.info('Video Info: name: {}, num_chunks: {} mAP: {}'.format(session, num_chunks, result["mean_AP"]))
+                np.concatenate(list(gt_targets.values()), axis=0),
+                np.concatenate(list(pred_scores.values()), axis=0),
+        )
 
-        pred_scores[session] = single_pred
-        gt_targets[session] = single_gt
-
-    logger.info('Performing the Last Test.')
-    results = evalution.eval_perframe(
-            cfg,
-            np.concatenate(list(gt_targets.values()), axis=0),
-            np.concatenate(list(pred_scores.values()), axis=0),
-    )
-
-    logger.info("All Inference Time, {}".format(inference_time))
-    logger.info("Num Chunks, {}".format(total_frames))
-    logger.info("FPS, {}".format(float(total_frames/inference_time)))
-    logger.info("mAP, {}".format(results["mean_AP"]))
+        logger.info("All Inference Time, {}".format(inference_time))
+        logger.info("Num Chunks, {}".format(total_frames))
+        logger.info("FPS, {}".format(float(total_frames/inference_time)))
+        logger.info("mAP, {}".format(results["mean_AP"]))
 
     
     if cfg.DEMO.ALL_TEST:

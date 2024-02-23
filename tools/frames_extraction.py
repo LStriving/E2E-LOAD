@@ -55,7 +55,7 @@ def extract_frames(input_folder,input_video, output_folder, fps, new_height=None
     print(f'Start to process {len(video_files)} video files')
 
     # 使用多进程处理视频文件
-    num_processes = multiprocessing.cpu_count()
+    num_processes = multiprocessing.cpu_count() - 4 if len(video_files) > 4 else len(video_files)
     pool = multiprocessing.Pool(processes=num_processes)
     for video_file in video_files:
         pool.apply_async(process_video, args=(video_file, output_folder, fps, resume, new_height, new_width,convert_to_rgb))
@@ -70,9 +70,6 @@ def process_video(video_file, output_folder, fps, resume, new_height, new_width,
     output_filepath = os.path.join(output_folder, file_prefix)
     if not os.path.exists(output_filepath):
         os.makedirs(output_filepath)
-    elif resume:
-        print(f'Skipping: {video_file}')
-        return
 
     # 打开视频文件
     video = decord.VideoReader(video_file)
@@ -83,11 +80,19 @@ def process_video(video_file, output_folder, fps, resume, new_height, new_width,
 
     # 确定需要的视频帧数和对应的索引
     num_extracted_frames = math.floor(num_frames * fps / frame_rate)
+    extracted_num_in_disk = len(os.listdir(output_filepath))
+    start=0
+    if extracted_num_in_disk == num_extracted_frames and resume:
+        print(f'Video {video_file} has already been processed')
+        return
+    elif resume:
+        start = extracted_num_in_disk - 1
     indexes = np.linspace(0, num_frames - 1, num=num_extracted_frames).astype(int)
+    indexes = indexes[start:]
     print(f'Total extracted frames of video {video_file}: {num_extracted_frames}')
 
     # 提取并保存视频帧
-    frame_count = 0
+    frame_count = extracted_num_in_disk
     for idx in tqdm(indexes):
         frame = video[idx].asnumpy()
         frame_filename = f"{file_prefix}_{frame_count}.jpg"
