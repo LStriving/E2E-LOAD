@@ -13,7 +13,8 @@ from datetime import datetime
 from bisect import bisect_right
 
 import os.path as osp
-
+import sys
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 import src.utils.checkpoint as cu
 import src.utils.distributed as du
 import src.utils.logging as logging

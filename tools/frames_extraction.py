@@ -11,7 +11,7 @@ import socket
 video_info = {}
 
 
-def extract_frames(input_folder,input_video, output_folder, fps, new_height=None, new_width=None, resume=False, node_num=1, rank=0, convert_to_rgb=False):
+def extract_frames(input_folder,input_video, output_folder, fps, new_height=None, new_width=None, resume=False, node_num=1, rank=0, convert_to_rgb=False, single_thread=False):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -52,8 +52,12 @@ def extract_frames(input_folder,input_video, output_folder, fps, new_height=None
         # split video_files
         video_files = np.array(video_files)
         video_files = np.array_split(video_files, node_num)[rank].tolist()
-    print(f'Start to process {len(video_files)} video files')
+    print(f'Start to process {len(video_files)} video file(s)')
 
+    if single_thread:
+        for video_file in video_files:
+            process_video(video_file, output_folder, fps, resume, new_height, new_width,convert_to_rgb)
+        return
     # 使用多进程处理视频文件
     num_processes = multiprocessing.cpu_count() - 4 if len(video_files) > 4 else len(video_files)
     pool = multiprocessing.Pool(processes=num_processes)
