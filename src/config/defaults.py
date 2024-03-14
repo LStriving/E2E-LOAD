@@ -1291,7 +1291,7 @@ _C.DEMO.DISPLAY_WIDTH = 0
 # Custom height for reading input video data.
 
 _C.DEMO.DISPLAY_HEIGHT = 0
-
+_C.DEMO.BENCHMARK = False
 # Number of overlapping frames between 2 consecutive clips.
 # Increase this number for more frequent action predictions.
 # The number of overlapping frames cannot be larger than
