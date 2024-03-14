@@ -89,7 +89,7 @@ def process_video(video_file, output_folder, fps, resume, new_height, new_width,
     if extracted_num_in_disk == num_extracted_frames and resume:
         print(f'Video {video_file} has already been processed')
         return
-    elif resume:
+    elif resume and extracted_num_in_disk > 0:
         start = extracted_num_in_disk - 1
     indexes = np.linspace(0, num_frames - 1, num=num_extracted_frames).astype(int)
     indexes = indexes[start:]
