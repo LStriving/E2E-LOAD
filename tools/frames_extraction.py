@@ -19,14 +19,14 @@ def extract_frames(input_folder,input_video, output_folder, fps, new_height=None
     assert os.path.exists(input_folder), f'Input folder {input_folder} does not exist'
     assert os.path.isdir(input_folder), f'Input folder {input_folder} is not a folder'
     if input_video is not None:
-        assert input_video.endswith(('.avi', '.mp4', '.mpg')), f'Input video {input_video} is not a video file'
+        assert input_video.endswith(('.avi', '.mp4', '.mpg', '.mpeg')), f'Input video {input_video} is not a video file'
         assert os.path.exists(os.path.join(input_folder, input_video)), f'Input video {input_video} does not exist'
     for filename in os.listdir(input_folder):
         if input_video is not None:
             if filename != input_video:
                 continue
         filepath = os.path.join(input_folder, filename)
-        if os.path.isfile(filepath) and filename.lower().endswith(('.avi', '.mp4', '.mpg')):
+        if os.path.isfile(filepath) and filename.lower().endswith(('.avi', '.mp4', '.mpg', '.mpeg')):
             # 检查是否已经提取过帧
             file_prefix = os.path.splitext(os.path.basename(filepath))[0]
             output_filepath = os.path.join(output_folder, file_prefix)
