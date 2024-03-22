@@ -56,7 +56,7 @@ def extract_frames(input_folder,input_video, output_folder, output_name, fps, ne
 
     if single_thread:
         for video_file in video_files:
-            process_video(video_file, output_folder, fps, resume, new_height, new_width,convert_to_rgb)
+            process_video(video_file, output_folder,output_name, fps, resume, new_height, new_width,convert_to_rgb)
         return
     # 使用多进程处理视频文件
     num_processes = multiprocessing.cpu_count() - 4 if len(video_files) > 4 else len(video_files)
