@@ -223,7 +223,8 @@ def demo(cfg):
         save_dir = save_path
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        np.save(save_dir + "/" + session + '.npy', single_pred)
+        save_path = os.path.join(save_dir, session+".npy")
+        np.save(save_path, single_pred)
 
         
         # performing the single test
@@ -262,3 +263,4 @@ def demo(cfg):
             'perframe_pred_scores': pred_scores,
             'perframe_gt_targets': gt_targets,
         }, open(save_path + '.pkl', 'wb'))
+    return save_path
