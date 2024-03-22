@@ -84,6 +84,13 @@ def retry_load_images(image_paths, retry=10, backend="pytorch"):
     Returns:
         imgs (list): list of loaded images.
     """
+    # a patch
+    if not os.path.exists(image_paths[0]):
+        base_dir = os.path.dirname(image_paths[0])
+        imgs_list = os.listdir(base_dir)
+        prefix = imgs_list[0].split('_')[0]
+        image_paths = [os.path.join(base_dir, prefix + i.split("_")[-1]) for i in image_paths]
+
     for i in range(retry):
         imgs = []
         for image_path in image_paths:
