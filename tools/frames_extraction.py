@@ -11,7 +11,7 @@ import socket
 video_info = {}
 
 
-def extract_frames(input_folder,input_video, output_folder, fps, new_height=None, new_width=None, resume=False, node_num=1, rank=0, convert_to_rgb=False, single_thread=False):
+def extract_frames(input_folder,input_video, output_folder, output_name, fps, new_height=None, new_width=None, resume=False, node_num=1, rank=0, convert_to_rgb=False, single_thread=False):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -29,7 +29,7 @@ def extract_frames(input_folder,input_video, output_folder, fps, new_height=None
         if os.path.isfile(filepath) and filename.lower().endswith(('.avi', '.mp4', '.mpg', '.mpeg')):
             # 检查是否已经提取过帧
             file_prefix = os.path.splitext(os.path.basename(filepath))[0]
-            output_filepath = os.path.join(output_folder, file_prefix)
+            output_filepath = os.path.join(output_folder, output_name)
             if os.path.exists(output_filepath):
                 # actual frames extracted
                 extracted_frame_num = os.listdir(output_filepath)
@@ -62,16 +62,16 @@ def extract_frames(input_folder,input_video, output_folder, fps, new_height=None
     num_processes = multiprocessing.cpu_count() - 4 if len(video_files) > 4 else len(video_files)
     pool = multiprocessing.Pool(processes=num_processes)
     for video_file in video_files:
-        pool.apply_async(process_video, args=(video_file, output_folder, fps, resume, new_height, new_width,convert_to_rgb))
+        pool.apply_async(process_video, args=(video_file, output_folder, output_name, fps, resume, new_height, new_width,convert_to_rgb))
     pool.close()
     pool.join()
     print("done!")
 
 
-def process_video(video_file, output_folder, fps, resume, new_height, new_width,convert_to_rgb):
+def process_video(video_file, output_folder, output_name, fps, resume, new_height, new_width,convert_to_rgb):
     # 检查是否已经提取过帧
     file_prefix = os.path.splitext(os.path.basename(video_file))[0]
-    output_filepath = os.path.join(output_folder, file_prefix)
+    output_filepath = os.path.join(output_folder, output_name)
     if not os.path.exists(output_filepath):
         os.makedirs(output_filepath)
 
@@ -99,7 +99,7 @@ def process_video(video_file, output_folder, fps, resume, new_height, new_width,
     frame_count = extracted_num_in_disk
     for idx in tqdm(indexes):
         frame = video[idx].asnumpy()
-        frame_filename = f"{file_prefix}_{frame_count}.jpg"
+        frame_filename = f"{file_prefix[:1]}_{frame_count}.jpg"
         frame_filepath = os.path.join(output_filepath, frame_filename)
         if new_height is not None and new_width is not None:
             frame = cv2.resize(frame, (new_width, new_height))
@@ -120,6 +120,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_folder', type=str, default='videos')
     parser.add_argument("--input_video", type=str, default=None, help="input video file")
     parser.add_argument('--output_folder', type=str, default='extracted_frames')
+    parser.add_argument('--output_name', type=str, default='frames')
     parser.add_argument('--fps', type=int, default=24)
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--node_num', type=int, default=1)
@@ -130,6 +131,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     resume = args.resume
     print(f'Working on {socket.gethostname()}')
-    extract_frames(args.input_folder, args.input_video, args.output_folder, args.fps,
-                    args.new_height, args.new_width,
+    extract_frames(args.input_folder, args.input_video, args.output_folder, args.output_name, 
+                    args.fps, args.new_height, args.new_width,
                     resume, args.node_num, args.rank, args.convert_to_rgb)
