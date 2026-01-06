@@ -15,7 +15,7 @@ TRAIN:
 DATA:
   TARGET_FORDER: 'targets/masked_8'
   DATA_INFO: 'data/data_info.json'
-  FRAME_TEMPL: '{}_{}.jpg'
+  # FRAME_TEMPL: '{}_{}.jpg'
   USE_OFFSET_SAMPLING: True
   DECODING_BACKEND: torchvision
   SAMPLING_RATE: 4

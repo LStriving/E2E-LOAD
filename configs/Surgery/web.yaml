@@ -14,7 +14,8 @@ TRAIN:
 DATA:
   USE_OFFSET_SAMPLING: True
   # FRAME_TEMPL: '{}_{}.jpg'
-  DATA_INFO: 'data/data_info_newvideos.json'
+  DATA_INFO: 'data/data_info.json'
+  TARGET_FORDER: 'media/input_data/Surgery/targets'
   DECODING_BACKEND: torchvision
   SAMPLING_RATE: 4
   TRAIN_JITTER_SCALES: [256, 320]
@@ -24,8 +25,10 @@ DATA:
   TRAIN_JITTER_SCALES_RELATIVE: [0.08, 1.0]
   TRAIN_JITTER_ASPECT_RELATIVE: [0.75, 1.3333]
   MULTI_LABEL: True
-  PATH_PREFIX: "Surgery_new"
+  PATH_PREFIX: "Surgery"
   ZERO_MASK: True 
+  PATH_TO_DATA_DIR: ""
+  VIDEO_FORDER: ""
 
 MVIT:
   ZERO_DECAY_POS_CLS: True
@@ -175,7 +178,7 @@ MODEL:
   LONG_MEMORY_SAMPLE_RATE: 4
   WORK_MEMORY_SECONDS: 8.0
   WORK_MEMORY_SAMPLE_RATE: 1 
-  MODE: 'DEBUG'
+  # MODE: 'DEBUG'
   CASUAL_MASK_ENABLE: True 
   MULTI_LABEL_NORM: False 
   MULTI_LABEL_SMOOTH: False
@@ -194,9 +197,10 @@ TEST:
 
 DEMO:
   ENABLE: True
-  INPUT_VIDEO: ['new4'] # valid when all test is false
+  # INPUT_VIDEO: ['new4'] # valid when all test is false
   CACHE_INFERENCE: True 
-  ALL_TEST: False 
+  ALL_TEST: False  
+  BENCHMARK: False
 
 DATA_LOADER:
   NUM_WORKERS: 32

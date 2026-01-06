@@ -13,7 +13,7 @@ TRAIN:
 
 DATA:
   USE_OFFSET_SAMPLING: True
-  FRAME_TEMPL: '{}_{}.jpg'
+  # FRAME_TEMPL: '{}_{}.jpg'
   DECODING_BACKEND: torchvision
   SAMPLING_RATE: 4 
   TRAIN_JITTER_SCALES: [256, 320]

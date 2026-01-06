@@ -14,7 +14,7 @@ TRAIN:
 DATA:
   USE_OFFSET_SAMPLING: True
   # FRAME_TEMPL: '{}_{}.jpg'
-  DATA_INFO: 'data/data_info_newvideos.json'
+  DATA_INFO: 'data/data_info_newvideos_test.json'
   DECODING_BACKEND: torchvision
   SAMPLING_RATE: 4
   TRAIN_JITTER_SCALES: [256, 320]
@@ -185,7 +185,7 @@ MODEL:
 
 TEST:
   ENABLE: False
-  DATASET: Surgerybatchinference
+  DATASET: Surgery
   BATCH_SIZE: 1
   NUM_SPATIAL_CROPS: 1 
   NUM_ENSEMBLE_VIEWS: 1 
@@ -206,3 +206,18 @@ NUM_GPUS: 1
 NUM_SHARDS: 1
 RNG_SEED: 0
 OUTPUT_DIR: outputs/Surgery/new_stream
+
+TENSORBOARD:
+  ENABLE: True
+  LOG_DIR: tb_logs
+  CLASS_NAMES_PATH: data/data_class_name.json
+  MODEL_VIS:
+    ENABLE: True
+    MODEL_WEIGHTS: False
+    INPUT_VIDEO: True
+    GRAD_CAM:
+      ENABLE: True
+      LAYER_LIST: ['temporal_mvit/blocks/1/attn']
+
+DETECTION:
+  ENABLE: False
