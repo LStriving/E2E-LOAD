@@ -13,7 +13,7 @@ TRAIN:
 
 DATA:
   USE_OFFSET_SAMPLING: True
-  # FRAME_TEMPL: '{}_{}.jpg'
+  FRAME_TEMPL: '{}_{}.jpg'
   DATA_INFO: 'data/data_info.json'
   TARGET_FORDER: 'media/input_data/Surgery/targets'
   DECODING_BACKEND: torchvision

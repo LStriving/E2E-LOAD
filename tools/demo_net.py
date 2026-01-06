@@ -10,7 +10,8 @@ from datetime import datetime
 
 from bisect import bisect_right
 import os.path as osp
-
+import sys
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 import src.utils.checkpoint as cu
 import src.utils.logging as logging
 from src.models import build_model
@@ -53,7 +54,7 @@ def demo(cfg):
     pred_scores = {}
     
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    save_path = osp.splitext(cfg.TEST.CHECKPOINT_FILE_PATH)[0] + '_' + stamp
+    save_path = cfg.OUTPUT_DIR + '_'
     
     # loading the video info; 
     for idx, session in enumerate(sessions):
@@ -201,10 +202,11 @@ def demo(cfg):
         
         # save the predicted results(no gt);
         single_pred = np.array(single_pred)
-        save_dir = save_path + '/result'
+        save_dir = save_path
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        np.save(save_dir + "/" + session + '.npy', single_pred)
+        save_path = os.path.join(save_dir, session+".npy")
+        np.save(save_path, single_pred)
 
         
         # performing the single test
