@@ -34,6 +34,28 @@
                 "--gpu=0",
                 "--config_file=${workspaceFolder}/configs/Surgery/MVITv2_S_16x4.yaml"
             ]
+        },
+        {
+            "name": "debug vis SURGERY",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tools/visualization.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--cfg=${workspaceFolder}/configs/Surgery/MVITv2_S_16x4_stream_newvideos_map.yaml"
+            ]
+        },
+        {
+            "name": "debug ARGS",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tools/run_net.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--cfg=${workspaceFolder}/configs/Surgery/MVITv2_S_16x4_stream_newvideos.yaml",
+            ]
         }
     ]
 }
