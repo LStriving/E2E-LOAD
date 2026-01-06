@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-import pdb
-
 import einops
 import numpy as np
 import os
 import random
-import pandas
 import torch
 import torch.utils.data
 from torchvision import transforms
 from itertools import chain as chain
 
 import src.utils.logging as logging
-from src.utils.env import pathmgr
 
 from . import transform as transform
 from . import utils as utils

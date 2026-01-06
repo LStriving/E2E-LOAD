@@ -869,7 +869,7 @@ _C.DATA.TEST_SESSION_SET = None
 
 # The path to the data directory.
 _C.DATA.PATH_TO_DATA_DIR = (
-    "/mnt/cephfs/home/liyirui/project/E2E-LOAD/data"
+    "/home/liyirui/E2E-LOAD/data"
 )
 
 # Which dataset is loaded.

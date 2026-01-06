@@ -1,7 +1,7 @@
 TRAIN:
   ENABLE: True
   DATASET: Surgery
-  BATCH_SIZE: 7
+  BATCH_SIZE: 4
   EVAL_PERIOD: 1
   CHECKPOINT_PERIOD: 1
   AUTO_RESUME: False 
@@ -13,7 +13,7 @@ TRAIN:
   CHECKPOINT_TYPE: "pytorch" 
 
 DATA:
-  TARGET_FORDER: 'targets/masked_8'
+  TARGET_FORDER: 'targets/class8'
   DATA_INFO: 'data/data_info.json'
   # FRAME_TEMPL: '{}_{}.jpg'
   USE_OFFSET_SAMPLING: True
@@ -209,7 +209,7 @@ MODEL:
 TEST:
   ENABLE: False
   DATASET: kinetics
-  BATCH_SIZE: 7 
+  BATCH_SIZE: 4 
   NUM_SPATIAL_CROPS: 1
   NUM_ENSEMBLE_VIEWS: 5
 
@@ -217,7 +217,7 @@ DATA_LOADER:
   NUM_WORKERS: 12
   PIN_MEMORY: True
 
-NUM_GPUS: 7
+NUM_GPUS: 4
 NUM_SHARDS: 1
 RNG_SEED: 0
 OUTPUT_DIR: outputs/Surgery/MVITv2_S_16x4 

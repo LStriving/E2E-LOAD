@@ -142,7 +142,8 @@ def load_image_lists(
 
         ## Split the Video List into chunks;
         num_chunks = int(frame_length // cfg.MODEL.CHUNK_SIZE) 
-        assert num_chunks == target.shape[0]
+        assert num_chunks == target.shape[0], f"Video: {session}, Frame Length: {frame_length}, \
+            Num Chunks: {num_chunks}, Target Shape: {target.shape} (Chunk Size: {cfg.MODEL.CHUNK_SIZE})"
 
         if cfg.MODEL.CHUNK_SIZE > 1:
             chunk_indices = np.split(
@@ -232,9 +233,9 @@ def load_image_lists(
                 for frame in chunk_indices[findice]: 
                     if cfg.DATA.PATH_PREFIX == "hdd":
                         frame += 1
-                    if cfg.TRAIN.DATASET == "Surgery":
-                        vid = video_path.split('/')[-1]
-                        fname = cfg.DATA.FRAME_TEMPL.format(vid, frame-1)
+                    # if cfg.TRAIN.DATASET == "Surgery":
+                    #     vid = video_path.split('/')[-1]
+                    #     fname = cfg.DATA.FRAME_TEMPL.format(vid, frame-1)
                     else:
                         fname = cfg.DATA.FRAME_TEMPL.format(frame)
                     path = os.path.join(video_path, fname)

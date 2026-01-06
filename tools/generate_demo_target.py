@@ -24,7 +24,7 @@ def generate(videos_frames_root, output_dir, video_name=None, resume=True):
         np.save(target_path, target)
     
 if __name__ == "__main__":
-    videos_frames_root = "/mnt/cephfs/home/liyirui/project/E2E-LOAD/data/Surgery_new/frames"
-    output_dir = "/mnt/cephfs/home/liyirui/project/E2E-LOAD/data/Surgery_new/targets"
+    videos_frames_root = "/home/liyirui/E2E-LOAD/data/Surgery_new/frames"
+    output_dir = "/home/liyirui/E2E-LOAD/data/Surgery_new/targets"
     
     generate(videos_frames_root, output_dir)

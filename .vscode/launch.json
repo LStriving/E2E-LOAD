@@ -31,8 +31,8 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--gpu=0",
-                "--config_file=${workspaceFolder}/configs/Surgery/MVITv2_S_16x4.yaml"
+                // "--gpu=0",
+                "--cfg=${workspaceFolder}/configs/Surgery/MVITv2_S_16x4.yaml"
             ]
         },
         {

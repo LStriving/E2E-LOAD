@@ -42,7 +42,15 @@ class VideoFrameExtractor:
             
             # 检查是否已处理过（避免重复处理）
             existing_frames = len(list(Path(frame_dir).glob('*.jpg')))
-            if existing_frames > 0:
+            # calculate expected frames 
+            # get video info first
+            info_cmd = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=duration', '-of', 'json', video_path]
+            result = subprocess.run(info_cmd, capture_output=True, text=True)
+            info = json.loads(result.stdout)
+            duration = float(info['streams[]'][0]['duration'])
+            expected_frames = int(duration * self.fps)
+
+            if abs(existing_frames - expected_frames) < 3:  # 允许少量误差
                 return {
                     'video': video_path,
                     'frame_dir': frame_dir,
