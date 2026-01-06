@@ -3,13 +3,13 @@
 import pdb
 
 import sys
-sys.path.append("/mnt/cephfs/home/liyirui/project/E2E-LOAD")
-sys.path.append("/mnt/cephfs/home/liyirui/project/slowfast")
+sys.path.append("/home/liyirui/E2E-LOAD")
+sys.path.append("/home/liyirui/slowfast")
 
 """Wrapper to train and test a video classification model."""
 from src.config.defaults import assert_and_infer_cfg
-from src.utils.misc import launch_job
 from src.utils.parser import load_config, parse_args
+from src.utils.misc import launch_job
 
 from demo_net import demo
 from test_net import test

@@ -83,7 +83,7 @@ def construct_loader(cfg, split, is_precise_bn=False):
 
     dataset = build_dataset(dataset_name, cfg, split)
     
-    # print(len(dataset))
+    print("Length of Dataset: ",len(dataset))
     # exit()
     
     if cfg.NUM_GPUS>1:

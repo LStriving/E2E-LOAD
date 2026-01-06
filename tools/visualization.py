@@ -78,28 +78,69 @@ def run_visualization(vis_loader, model, cfg, writer=None):
         )
     logger.info("Finish drawing weights.")
     global_idx = -1
-    for inputs, labels, _, meta in tqdm.tqdm(vis_loader):
-        if cfg.NUM_GPUS:
-            # Transfer the data to the current GPU device.
-            if isinstance(inputs, (list,)):
-                for i in range(len(inputs)):
-                    inputs[i] = inputs[i].cuda(non_blocking=True)
-            else:
-                inputs = inputs.cuda(non_blocking=True)
-            labels = labels.cuda()
-            for key, val in meta.items():
-                if isinstance(val, (list,)):
-                    for i in range(len(val)):
-                        val[i] = val[i].cuda(non_blocking=True)
-                else:
-                    meta[key] = val.cuda(non_blocking=True)
-
-        if cfg.DETECTION.ENABLE:
-            activations, preds = model_vis.get_activations(
-                inputs, meta["boxes"]
-            )
+    for items in tqdm.tqdm(vis_loader):
+        if cfg.MODEL.LONG_MEMORY_ENABLE:
+            (work_frames, long_frames, long_key_padding_mask, labels) = items
         else:
-            activations, preds = model_vis.get_activations(inputs)
+            (
+                work_frames,
+                labels,
+            ) = items  # w_f: torch.Size([2, 3, 64, 224, 224]); label: torch.Size([2, 32, 31])
+
+        # Transfer the data to the current GPU device.
+        if cfg.NUM_GPUS:
+            if isinstance(work_frames, (list,)): 
+                for i in range(len(work_frames)): 
+                    if isinstance(work_frames[i], (list,)):
+                        for j in range(len(work_frames[i])):
+                            work_frames[i][j] = work_frames[i][j].cuda(
+                                non_blocking=True
+                            )
+                            if cfg.MODEL.LONG_MEMORY_ENABLE:
+                                long_frames[i][j] = long_frames[i][j].cuda(
+                                    non_blocking=True
+                                )
+                                long_key_padding_mask[i][j] = long_key_padding_mask[i][j].cuda(non_blocking=True)
+                    else:
+                        work_frames[i] = work_frames[i].cuda(non_blocking=True)
+                        if cfg.MODEL.LONG_MEMORY_ENABLE:
+                            long_frames[i] = long_frames[i].cuda(
+                                non_blocking=True
+                            )
+                            long_key_padding_mask[i][j] = long_key_padding_mask[i][j].cuda(non_blocking=True)
+            else: 
+                work_frames = work_frames.cuda(non_blocking=True)
+                if cfg.MODEL.LONG_MEMORY_ENABLE:
+                    long_frames = long_frames.cuda(non_blocking=True)
+                    long_key_padding_mask = long_key_padding_mask.cuda(non_blocking=True)
+            if not isinstance(labels, list):
+                labels = labels.cuda(non_blocking=True)
+    
+        # if cfg.NUM_GPUS:
+        #     # Transfer the data to the current GPU device.
+        #     if isinstance(inputs, (list,)):
+        #         for i in range(len(inputs)):
+        #             inputs[i] = inputs[i].cuda(non_blocking=True)
+        #     else:
+        #         inputs = inputs.cuda(non_blocking=True)
+        #     labels = labels.cuda()
+        #     for key, val in meta.items():
+        #         if isinstance(val, (list,)):
+        #             for i in range(len(val)):
+        #                 val[i] = val[i].cuda(non_blocking=True)
+        #         else:
+        #             meta[key] = val.cuda(non_blocking=True)
+        if cfg.MODEL.LONG_MEMORY_ENABLE:
+            inputs = (work_frames, long_frames,long_key_padding_mask)
+        else:
+            inputs = work_frames
+
+        # if cfg.DETECTION.ENABLE:
+        #     activations, preds = model_vis.get_activations(
+        #         inputs, meta["boxes"]
+        #     )
+        # else:
+        #     activations, preds = model_vis.get_activations(inputs)
         if cfg.TENSORBOARD.MODEL_VIS.GRAD_CAM.ENABLE:
             if cfg.TENSORBOARD.MODEL_VIS.GRAD_CAM.USE_TRUE_LABEL:
                 inputs, preds = gradcam(inputs, labels=labels)
@@ -259,7 +300,7 @@ def visualize(cfg):
         or cfg.TENSORBOARD.WRONG_PRED_VIS.ENABLE
     ):
         # Set up environment.
-        du.init_distributed_training(cfg)
+        du.init_distributed_training(cfg.NUM_GPUS, cfg.SHARD_ID)
         # Set random seed from configs.
         np.random.seed(cfg.RNG_SEED)
         torch.manual_seed(cfg.RNG_SEED)
@@ -274,6 +315,10 @@ def visualize(cfg):
         # Build the video model and print model statistics.
         model = build_model(cfg)
         model.eval()
+        print(model)
+        # print model layers name
+        for name, param in model.named_parameters():
+            print(name)
         if du.is_master_proc() and cfg.LOG_MODEL_INFO:
             misc.log_model_info(model, cfg, use_train_input=False)
 
@@ -343,3 +388,15 @@ def visualize(cfg):
 
         if writer is not None:
             writer.close()
+
+if __name__ == "__main__":
+    from src.config.defaults import assert_and_infer_cfg
+    from src.utils.parser import load_config, parse_args
+    # Parse command line arguments
+    args = parse_args()
+    print("config files: {}".format(args.cfg_files))
+    for path_to_config in args.cfg_files:
+        cfg = load_config(args, path_to_config)
+        cfg = assert_and_infer_cfg(cfg)
+        # Perform visualization
+        visualize(cfg)

@@ -7771,7 +7771,7 @@
         ]
     },
     "Surgery": {
-        "data_root": "data/Surgery",
+        "data_root": "data/eyes_surgery",
         "class_names": [
             "carbachol_injection",
             "CVA_injection",

@@ -1350,6 +1350,9 @@ _C.DEMO.COMMON_CLASS_NAMES = [
 # video will be played `_C.DEMO.SLOWMO` times slower than usual speed.
 _C.DEMO.SLOWMO = 1
 
+# add config node
+_C.DETECTION = CfgNode()
+_C.DETECTION.ENABLE = False
 # Add custom config with default values.
 custom_config.add_custom_config(_C)
 
