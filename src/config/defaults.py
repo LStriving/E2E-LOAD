@@ -878,6 +878,9 @@ _C.DATA.PATH_PREFIX = ""  # 'thumos'
 # the forders that contains all the frame forder;
 _C.DATA.VIDEO_FORDER = "frames"
 
+# video extension list
+_C.DATA.VIDEO_EXT = ['mp4', 'avi', 'mkv', 'webm', 'mov', 'mpg']
+
 
 _C.DATA.FRAME_TEMPL = "img_{:05d}.jpg"
 # the dataset that contain the all the video annotations at 4 FPS;
@@ -1406,7 +1409,7 @@ def assert_and_infer_cfg(cfg):  # 对有依赖关系的配置文件, 进行关�
         data_info["metrics"] if cfg.DATA.METRICS is None else cfg.DATA.METRICS
     )
     cfg.DATA.PROCESS_FPS = (
-        data_info["fps"]
+        data_info["fps"] # 4
         if cfg.DATA.PROCESS_FPS is None
         else cfg.DATA.PROCESS_FPS
     )

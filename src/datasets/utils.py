@@ -9,6 +9,7 @@ import random
 import time
 from collections import defaultdict
 import cv2
+from decord import VideoReader, cpu
 import torch
 from torch.utils.data.distributed import DistributedSampler
 
@@ -109,6 +110,18 @@ def retry_load_images(image_paths, retry=10, backend="pytorch"):
         if i == retry - 1:
             raise Exception("Failed to load images {}".format(image_paths))
 
+def get_video(video_root, video_name, ext_list):
+    for ext in ext_list:
+        video_path = os.path.join(video_root, f'{video_name}.{ext}')
+        if os.path.exists(video_path):
+            return video_path
+    raise Exception(f"Failed to load {video_name} with current extensions")
+
+def get_frame_count_and_fps(video_path):
+    vr = VideoReader(video_path, ctx=cpu(0))
+
+    # 直接使用 len() 获取总帧数
+    return len(vr), vr.get_avg_fps()
 
 def get_sequence(center_idx, half_len, sample_rate, num_frames):
     """
