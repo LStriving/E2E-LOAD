@@ -12,3 +12,5 @@ data/
 *epoch_*.pyth
 
 ckpt/
+
+.env
