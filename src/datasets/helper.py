@@ -25,7 +25,7 @@ from .random_erasing import RandomErasing
 from .transform import create_random_augment
 from . import transform as transform
 from . import utils as utils
-from . import VideoSampleInfo
+from .video_sample_info import VideoSampleInfo
 
 from bisect import bisect_right
 
@@ -139,6 +139,8 @@ def load_image_lists(
         target = np.load(target_path) 
         
         frame_length = len(os.listdir(video_path))
+        print(f"Session: {session}, Frame Length: {frame_length}")
+
         frame_indices = np.arange(frame_length)
 
         ## Split the Video List into chunks;
@@ -334,6 +336,7 @@ def load_image_lists(
             )
             == 1
         )
+        print(f"Total Samples: {len(work_image_paths)} (frames raw)")
         return (
             work_image_paths,
             long_image_paths,
@@ -572,13 +575,13 @@ def load_video_samples_decord(cfg, sessions, video_root, target_root, mode, retu
         video_path = utils.get_video(video_root, session, cfg.DATA.VIDEO_EXT)
         target_path = os.path.join(target_root, session + ".npy") 
         if not os.path.exists(target_path):
-             print(f"Warning: Target for session {session} not found.")
-             continue
+             raise Exception(f"Warning: Target for session {session} not found.")
         target = np.load(target_path) 
 
         # 2. Decord Initialization (Lightweight, CPU only)
         # We only need metadata here, not actual frames
         real_frame_count, real_fps = utils.get_frame_count_and_fps(video_path)
+        print(f"Session: {session}, Real Frame Count: {real_frame_count}, Real FPS: {real_fps}")
 
         # 3. Handle FPS Mapping (Logical vs Real)
         # Original code logic relied on "extracted frames".
@@ -739,6 +742,7 @@ def load_video_samples_decord(cfg, sessions, video_root, target_root, mode, retu
             )
             samples_list.append(sample)
 
+    print(f"Total Samples: {len(samples_list)} (decord)")
     if return_list:
         return samples_list
 
@@ -750,7 +754,7 @@ def load_video_samples_decord(cfg, sessions, video_root, target_root, mode, retu
         # Assuming session name can be extracted from video_path or we need to track it
         # For simplicity, returning the flat list as it's more modern.
         pass
-
+    
     return samples_list
 
 def load_frames(

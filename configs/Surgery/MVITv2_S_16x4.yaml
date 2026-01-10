@@ -15,6 +15,7 @@ TRAIN:
 DATA:
   TARGET_FORDER: 'targets/class8'
   DATA_INFO: 'data/data_info.json'
+  ANNO: data/annos/Surgery/masked_label_v5.json
   # FRAME_TEMPL: '{}_{}.jpg'
   USE_OFFSET_SAMPLING: True
   DECODING_BACKEND: torchvision

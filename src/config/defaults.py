@@ -869,9 +869,8 @@ _C.DATA.TEST_SESSION_SET = None
 
 # The path to the data directory.
 _C.DATA.PATH_TO_DATA_DIR = (
-    "/home/liyirui/E2E-LOAD/data"
+    "data"
 )
-
 # Which dataset is loaded.
 _C.DATA.PATH_PREFIX = ""  # 'thumos'
 
@@ -889,6 +888,9 @@ _C.DATA.TARGET_FORDER = "targets"
 # dataset info;
 _C.DATA.DATA_INFO = "data/data_info.json"
 # _C.DATA.DATA_INFO = "data/debug_data.json"
+
+# dataset annotation json
+_C.DATA.ANNO = None
 
 # The number of frames of the input clip.
 # _C.DATA.NUM_FRAMES = 8

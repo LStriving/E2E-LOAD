@@ -14,3 +14,5 @@ data/
 ckpt/
 
 .env
+
+debug_vis

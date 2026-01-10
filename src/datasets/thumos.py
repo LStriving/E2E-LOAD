@@ -81,8 +81,10 @@ class Thumos(torch.utils.data.Dataset):
             self._num_clips = (
                 cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS
             )  
+            print(f"Thumos Dataset Test Mode: _num_clips = {self._num_clips}")
 
         logger.info("Constructing THUMOS {}...".format(mode))
+        print("Thumos Dataset")
         self._construct_loader()
         self.aug = False  
         self.rand_erase = False

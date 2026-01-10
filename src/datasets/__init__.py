@@ -6,7 +6,6 @@ from .thumos import Thumos # noqa
 from .surgery import Surgery
 from .tvseries import Tvseries  # noqa
 from .hdd import Hdd  # noqa
-from .video_sample_info import VideoSampleInfo
 
 try:
     from .ptv_datasets import Ptvcharades, Ptvkinetics, Ptvssv2  # noqa

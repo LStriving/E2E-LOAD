@@ -3,6 +3,7 @@
 
 import pdb
 
+import warnings
 import logging
 import math
 import numpy as np
@@ -18,6 +19,10 @@ from torchvision import transforms
 
 from .rand_augment import rand_augment_transform
 from .random_erasing import RandomErasing
+
+import torch
+from torchvision.transforms import v2
+from torchvision.transforms import InterpolationMode
 
 _pil_interpolation_to_str = {
     Image.NEAREST: "PIL.Image.NEAREST",
@@ -638,6 +643,8 @@ def create_random_augment(
             of operations to apply).
         interpolation: Interpolation method.
     """
+    warnings.warn("`create_random_augment` has a slow io since it use PIL and CPU," \
+        "replace it with `create_random_augment_tensor`", DeprecationWarning)
     if isinstance(input_size, tuple):
         img_size = input_size[-2:]
     else:
@@ -660,6 +667,44 @@ def create_random_augment(
                 [rand_augment_transform(auto_augment, aa_params)]
             )
     raise NotImplementedError
+
+def create_random_augment_tensor(auto_augment_str, interpolation="bilinear"):
+    """
+    创建基于 Tensor 的 RandAugment 变换。
+    完全移除 PIL 依赖。
+    """
+    if not auto_augment_str or not auto_augment_str.startswith("rand"):
+        return v2.Identity()
+
+    # 解析参数 (简单解析 n 和 m)
+    # 示例字符串: "rand-m7-n4-mstd0.5-inc1"
+    parts = auto_augment_str.split('-')
+    num_ops = 2  # 默认值
+    magnitude = 9 # 默认值
+    
+    for part in parts:
+        if part.startswith('n'):
+            try: num_ops = int(part[1:])
+            except: pass
+        elif part.startswith('m') and not part.startswith('mstd'):
+            try: magnitude = int(part[1:])
+            except: pass
+
+    # 映射插值方式
+    interp_mode = InterpolationMode.BILINEAR
+    if interpolation == "bicubic":
+        interp_mode = InterpolationMode.BILINEAR # not support for bicubic in v2(0.15)
+    elif interpolation == "nearest":
+        interp_mode = InterpolationMode.NEAREST
+
+    # 构建 v2.RandAugment
+    # v2 会自动处理 Video Tensor (T, C, H, W) 或 (C, H, W)
+    # 并且保证同一视频的所有帧应用相同的变换（一致性）
+    return v2.RandAugment(
+        num_ops=num_ops,
+        magnitude=magnitude,
+        interpolation=interp_mode
+    )
 
 
 def random_sized_crop_img(

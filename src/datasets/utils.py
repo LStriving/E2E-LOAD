@@ -115,7 +115,7 @@ def get_video(video_root, video_name, ext_list):
         video_path = os.path.join(video_root, f'{video_name}.{ext}')
         if os.path.exists(video_path):
             return video_path
-    raise Exception(f"Failed to load {video_name} with current extensions")
+    raise Exception(f"Failed to load {video_name} with current extensions under {video_root} ({ext_list})")
 
 def get_frame_count_and_fps(video_path):
     vr = VideoReader(video_path, ctx=cpu(0))
