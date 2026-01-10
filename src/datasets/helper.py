@@ -139,7 +139,6 @@ def load_image_lists(
         target = np.load(target_path) 
         
         frame_length = len(os.listdir(video_path))
-        print(f"Session: {session}, Frame Length: {frame_length}")
 
         frame_indices = np.arange(frame_length)
 
@@ -336,7 +335,6 @@ def load_image_lists(
             )
             == 1
         )
-        print(f"Total Samples: {len(work_image_paths)} (frames raw)")
         return (
             work_image_paths,
             long_image_paths,
@@ -581,7 +579,6 @@ def load_video_samples_decord(cfg, sessions, video_root, target_root, mode, retu
         # 2. Decord Initialization (Lightweight, CPU only)
         # We only need metadata here, not actual frames
         real_frame_count, real_fps = utils.get_frame_count_and_fps(video_path)
-        print(f"Session: {session}, Real Frame Count: {real_frame_count}, Real FPS: {real_fps}")
 
         # 3. Handle FPS Mapping (Logical vs Real)
         # Original code logic relied on "extracted frames".
@@ -742,7 +739,6 @@ def load_video_samples_decord(cfg, sessions, video_root, target_root, mode, retu
             )
             samples_list.append(sample)
 
-    print(f"Total Samples: {len(samples_list)} (decord)")
     if return_list:
         return samples_list
 

@@ -1,16 +1,15 @@
-import unittest
-import torch
-import sys
 import os
+import sys
+import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT)
+import numpy as np
+import torch
+from torchvision.utils import make_grid, save_image
+from torch.utils.data.dataloader import DataLoader, Sampler
+
 from src.datasets.surgery import Surgery, Thumos
 from src.config.defaults import get_cfg, assert_and_infer_cfg
-
-import torch
-import os
-from torchvision.utils import make_grid, save_image
-from torch.utils.data.dataloader import DataLoader
 
 def visualize_comparison(tensor_old, tensor_new, save_dir="debug_vis", index=0):
     """
@@ -91,8 +90,8 @@ def test_tensor_content_similarity(loader_old, loader_new, num_samples=3):
             
         # Unpack: Assuming format (frames, labels, ...)
         # Adjust index [0] if your loader returns something else
-        frames_old = batch_old[0] 
-        frames_new = batch_new[0]
+        frames_old = batch_old[1] 
+        frames_new = batch_new[1]
         
         # Calculate Metrics
         mse = torch.mean((frames_old - frames_new) ** 2).item()
@@ -119,45 +118,19 @@ def calculate_psnr(img1, img2):
     if mse == 0:
         return float('inf')
     return 20 * torch.log10(1.0 / torch.sqrt(mse))
-
-def test_tensor_content_similarity(loader_old, loader_new, num_samples=5):
-    iter_old = iter(loader_old)
-    iter_new = iter(loader_new)
-    
-    print(f"{'Sample':<10} | {'MSE':<10} | {'PSNR (dB)':<10} | {'Result'}")
-    print("-" * 50)
-
-    for i in range(num_samples):
-        batch_old = next(iter_old)
-        batch_new = next(iter_new)
-        
-        # Unpack your specific return tuple
-        # Assuming: work_frames, labels = batch
-        frames_old = batch_old[0] 
-        frames_new = batch_new[0]
-
-        print(frames_new.shape)
-        
-        # Calculate MSE
-        mse = torch.mean((frames_old - frames_new) ** 2).item()
-        
-        # Calculate PSNR
-        psnr = calculate_psnr(frames_old, frames_new).item()
-        
-        # Decision Logic
-        # > 25dB is usually a safe threshold for "same frame, different decoding"
-        status = "PASS" if psnr > 25.0 else "FAIL" 
-        
-        print(f"{i:<10} | {mse:.6f}   | {psnr:.2f}       | {status}")
-        
-        if status == "FAIL":
-            print(">> Low PSNR detected! Check for Frame Shift or Channel Flip.")
-            # Trigger visualization here automatically
-            visualize_comparison(frames_old[0], frames_new[0], index=i)
-
 # Run the test
 # test_tensor_content_similarity(old_loader, new_loader)
 
+class ReverseSampler(Sampler):
+    def __init__(self, data_source):
+        self.data_source = data_source
+
+    def __iter__(self):
+        # Generate indices from len-1 down to 0
+        return iter(range(len(self.data_source) - 1, -1, -1))
+
+    def __len__(self):
+        return len(self.data_source)
 
 class TestSurgeryDataset(unittest.TestCase):
 
@@ -171,15 +144,15 @@ class TestSurgeryDataset(unittest.TestCase):
         self.cfg.DATA.TEST_SAMPLE_RATE = 2
         self.cfg.DATA.TRAIN_SESSION_SET = ["360"]
         self.cfg.DATA.TEST_SESSION_SET = ['360']
-        self.cfg.MODEL.LONG_MEMORY_ENABLE = False
-        self.cfg.AUG.ENABLE = False
+        self.cfg.MODEL.LONG_MEMORY_ENABLE = True
+        self.cfg.AUG.ENABLE = True
         self.mode = "test"
         # self.mode = "train"
         self.dataset = Surgery(self.cfg, mode=self.mode)
         self.cfg.DATA.VIDEO_FORDER = "frames"
         self.dataset1 = Thumos(self.cfg, mode=self.mode)
-        self.loader = DataLoader(self.dataset)
-        self.loader1= DataLoader(self.dataset1)
+        self.loader = DataLoader(self.dataset, sampler=ReverseSampler(self.dataset))
+        self.loader1= DataLoader(self.dataset1, sampler=ReverseSampler(self.dataset1))
 
     @unittest.skip("passed")
     def test_dataset_length(self):
@@ -221,18 +194,19 @@ class TestSurgeryDataset(unittest.TestCase):
         """
         Test if the tensor contents from the two datasets are close enough.
         """
-        # sample_surgery = self.dataset[0]
-        # sample_thumos = self.dataset1[0]
+        sample_surgery = self.dataset[1280]
+        sample_thumos = self.dataset1[1280]
 
-        # frames_surgery = sample_surgery[0]
-        # frames_thumos = sample_thumos[0]
+        label_surgery = sample_surgery[-1]
+        label_thumos = sample_thumos[-1] 
 
-        # self.assertTrue(
-        #     torch.allclose(frames_surgery, frames_thumos, atol=1e-5),
-        #     "Tensor contents are not close enough between Surgery and Thumos datasets."
-        # )
+        print(label_thumos.shape)
+        self.assertTrue(
+            np.allclose(label_surgery, label_thumos, atol=1e-5),
+            "Tensor contents are not close enough between Surgery and Thumos datasets."
+        )
 
-        test_tensor_content_similarity(self.loader, self.loader1)
+        # test_tensor_content_similarity(self.loader, self.loader1)
     
 
 if __name__ == "__main__":

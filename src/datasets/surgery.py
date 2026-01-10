@@ -34,10 +34,8 @@ class Surgery(torch.utils.data.Dataset):
             self._num_clips = (
                 cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS
             )
-            print(f"Surgery Dataset Test Mode: _num_clips = {self._num_clips}")  
 
         logger.info("Constructing Surgery {}...".format(mode))
-        print("Surgery Dataset")
         self._construct_loader()
         self._construct_target_tolocal()
         self.aug = False  
@@ -207,8 +205,6 @@ class Surgery(torch.utils.data.Dataset):
         assert (
             len(self.samples) > 0
         ), "Failed to load Surgery dataset"
-
-        
 
     def _load_raw_frames_decord(self, vr, indices, time_diff_prob, gaussian_prob):
         """
