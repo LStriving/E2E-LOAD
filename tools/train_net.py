@@ -29,6 +29,7 @@ from src.models.contrastive import (
 )
 from src.utils.meters import EpochTimer, TrainMeter, ValMeter
 from src.utils.multigrid import MultigridSchedule
+from src.utils.version import get_reproducibility_info
 
 logger = logging.get_logger(__name__)
 
@@ -413,6 +414,8 @@ def train(cfg):
     # setup_random_seed(cfg.RNG_SEED)
     # Setup logging format.
     logging.setup_logging(cfg.OUTPUT_DIR)
+
+    logger.info(pprint.pformat(get_reproducibility_info()))
 
     # Print config.
     logger.info("Train with config:")

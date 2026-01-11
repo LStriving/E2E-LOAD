@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 import pdb
-
+import os
 import sys
-sys.path.append("/home/liyirui/E2E-LOAD")
-sys.path.append("/home/liyirui/slowfast")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(ROOT)
+sys.path.append(os.path.join(os.path.dirname(ROOT), 'slowfast','slowfast'))
+print(sys.path[-2:])
 
 """Wrapper to train and test a video classification model."""
 from src.config.defaults import assert_and_infer_cfg

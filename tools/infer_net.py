@@ -18,6 +18,7 @@ from src.datasets import loader
 from src.models import build_model
 from src.utils.env import pathmgr
 from src.utils.meters import AVAMeter, TestMeter
+from src.utils.version import get_reproducibility_info
 
 logger = logging.get_logger(__name__)
 
@@ -176,6 +177,7 @@ def test(cfg):
 
     # Setup logging format.
     logging.setup_logging(cfg.OUTPUT_DIR)
+    logger.info(get_reproducibility_info())
 
     if len(cfg.TEST.NUM_TEMPORAL_CLIPS) == 0:
         cfg.TEST.NUM_TEMPORAL_CLIPS = [cfg.TEST.NUM_ENSEMBLE_VIEWS]
