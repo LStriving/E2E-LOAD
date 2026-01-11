@@ -36,8 +36,8 @@ class Surgery(torch.utils.data.Dataset):
             )
 
         logger.info("Constructing Surgery {}...".format(mode))
-        self._construct_loader()
         self._construct_target_tolocal()
+        self._construct_loader()
         self.aug = False  
         self.rand_erase = False
         self.use_temporal_gradient = False

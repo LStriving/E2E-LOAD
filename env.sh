@@ -21,7 +21,7 @@ cd ..
 cd E2E-LOAD
 # create env file
 cp .env.example .env
-
+cd ..
 # set env variable to ~/.bashrc (slowfast/slowfast E2E-LOAD)
 # echo "export PYTHONPATH=\$PYTHONPATH:$(pwd)/slowfast:$(pwd)/E2E-LOAD" >> ~/.bashrc
 # source ~/.bashrc

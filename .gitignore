@@ -16,3 +16,5 @@ ckpt/
 .env
 
 debug_vis
+remote_scripts/
+outputs/
