@@ -8,12 +8,15 @@ def get_reproducibility_info():
     # 2. Check for uncommitted changes (Dirty State)
     # Returns output if there are changes, empty otherwise
     status_cmd = ['git', 'status', '--porcelain']
-    is_dirty = subprocess.check_output(status_cmd).decode('ascii').strip() != ""
+    output = subprocess.check_output(status_cmd).decode('ascii')
+    is_dirty = output.strip() != ""
+    dirty_file_list = output
     
     return {
         "git_hash": git_hash,
         "is_dirty": is_dirty, # WARNING: If True, results may not be reproducible!
-        "branch": subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('ascii').strip()
+        "branch": subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('ascii').strip(),
+        "dirty_files": dirty_file_list
     }
 
 
