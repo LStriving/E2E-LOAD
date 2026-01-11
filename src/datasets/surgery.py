@@ -36,7 +36,6 @@ class Surgery(torch.utils.data.Dataset):
             )
 
         logger.info("Constructing Surgery {}...".format(mode))
-        self._construct_target_tolocal()
         self._construct_loader()
         self.aug = False  
         self.rand_erase = False
@@ -147,6 +146,7 @@ class Surgery(torch.utils.data.Dataset):
         self.target_root = os.path.join(
             self.data_root, self.cfg.DATA.TARGET_FORDER
         )
+        self._construct_target_tolocal()
         
         # self.sessions contains all the {train/val} sessions;
         self.sessions = getattr(
