@@ -102,8 +102,10 @@ class Surgery(torch.utils.data.Dataset):
             if  video_id not in self.cfg.DATA.TRAIN_SESSION_SET and \
                 video_id not in self.cfg.DATA.TEST_SESSION_SET:
                 continue
-            real_frame_count = video_anno['frame_count']
-            real_fps = video_anno['fps']
+            # real_frame_count = video_anno['frame_count']
+            # real_fps = video_anno['fps']
+            video_path = utils.get_video(self.video_root, video_id, self.cfg.DATA.VIDEO_EXT)
+            real_frame_count, real_fps = utils.get_frame_count_and_fps(video_path)
             scale_factor = real_fps / self.cfg.DATA.TARGET_FPS
             # "logical" length
             frame_len = int(real_frame_count / scale_factor)
