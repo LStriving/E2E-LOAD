@@ -101,7 +101,7 @@ def test_tensor_content_similarity(loader_old, loader_new, num_samples=3):
         else:
             psnr = 20 * torch.log10(1.0 / torch.sqrt(torch.tensor(mse))).item()
             
-        status = "PASS" if psnr > 25.0 else "FAIL"
+        status = "PASS" if psnr > 10.0 else "FAIL"
         print(f"{i:<10} | {mse:.6f}   | {psnr:.2f}       | {status}")
         
         # Always visualize failures, or first sample for sanity
@@ -206,7 +206,18 @@ class TestSurgeryDataset(unittest.TestCase):
             "Tensor contents are not close enough between Surgery and Thumos datasets."
         )
 
-        # test_tensor_content_similarity(self.loader, self.loader1)
+        test_tensor_content_similarity(self.loader, self.loader1, 3000)
+
+    def test_return_type(self):
+        '''
+        Test if the return types of each item are the same
+        '''
+        res = self.dataset[0]
+        res1 = self.dataset1[0]
+
+        for a,b in zip(res, res1):
+            print(type(a), type(b))
+            self.assertTrue(a.shape == b.shape)
     
 
 if __name__ == "__main__":

@@ -277,8 +277,7 @@ class Surgery(torch.utils.data.Dataset):
         long_key_padding_mask = None
         
         if self.cfg.MODEL.LONG_MEMORY_ENABLE and sample.long_memory_indices is not None:
-            long_indices, long_mask = sample.long_memory_indices
-            long_key_padding_mask = torch.from_numpy(long_mask)
+            long_indices, long_key_padding_mask = sample.long_memory_indices
 
             # Optimization: 
             # We fetch directly using the indices. The list `long_indices` already contains 
@@ -402,7 +401,6 @@ class Surgery(torch.utils.data.Dataset):
                 # Note: list doesn't have .to(), so only apply if tensor
                 if not isinstance(final_long, list):
                     final_long = final_long.to(torch.float32)
-
             return final_work, final_long, long_key_padding_mask, labels
         else:
             return final_work, labels
