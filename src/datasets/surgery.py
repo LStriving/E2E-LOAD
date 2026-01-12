@@ -2,7 +2,7 @@ import json
 from tqdm import tqdm
 from decord import VideoReader, cpu
 
-from tools.check_len_consistency import check_session
+from .check_len_consistency import check_session
 from .thumos import *
 
 @DATASET_REGISTRY.register()
@@ -89,7 +89,7 @@ class Surgery(torch.utils.data.Dataset):
         """
         # check if exists already
         if not os.path.exists(self.target_root):
-            os.makedirs(self.target_root)
+            os.makedirs(self.target_root, exist_ok=True)
         exist_targets = os.listdir(self.target_root)
         if len(exist_targets) == len(self.cfg.DATA.TRAIN_SESSION_SET) + len(self.cfg.DATA.TEST_SESSION_SET):
             # TODO: santity check
