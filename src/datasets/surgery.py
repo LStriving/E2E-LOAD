@@ -87,7 +87,7 @@ class Surgery(torch.utils.data.Dataset):
         """
         # check if exists already
         if not os.path.exists(self.target_root):
-            os.makedirs(self.target_root)
+            os.makedirs(self.target_root, exist_ok=True)
         exist_targets = os.listdir(self.target_root)
         if len(exist_targets) == len(self.cfg.DATA.TRAIN_SESSION_SET) + len(self.cfg.DATA.TEST_SESSION_SET):
             return
