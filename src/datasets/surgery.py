@@ -98,7 +98,7 @@ class Surgery(torch.utils.data.Dataset):
         with open(self.data_anno, 'r') as f:
             data = json.load(f)
 
-        for video_id, video_anno in tqdm(data.items(), desc="Constructing target"):
+        for video_id, video_anno in tqdm(data.items(), desc="Constructing target file"):
             if  video_id not in self.cfg.DATA.TRAIN_SESSION_SET and \
                 video_id not in self.cfg.DATA.TEST_SESSION_SET:
                 continue

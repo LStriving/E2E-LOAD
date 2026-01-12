@@ -108,6 +108,8 @@ def construct_loader(cfg, split, is_precise_bn=False):
             drop_last=drop_last,
             collate_fn=detection_collate if cfg.DETECTION.ENABLE else None,
             worker_init_fn=utils.loader_worker_init_fn(dataset),
+            persistent_workers=True,
+            prefetch_factor=2
         )
     else:
 
