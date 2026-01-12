@@ -118,7 +118,7 @@ def get_video(video_root, video_name, ext_list):
     raise Exception(f"Failed to load {video_name} with current extensions under {video_root} ({ext_list})")
 
 def get_frame_count_and_fps(video_path):
-    vr = VideoReader(video_path, ctx=cpu(0))
+    vr = VideoReader(video_path, ctx=cpu(0),num_threads=1)
 
     # 直接使用 len() 获取总帧数
     return len(vr), vr.get_avg_fps()

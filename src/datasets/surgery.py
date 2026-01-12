@@ -231,7 +231,7 @@ class Surgery(torch.utils.data.Dataset):
         # 1. Initialize Video Reader (Efficient IO: Open once)
         try:
             # ctx=cpu(0) is best for Dataloader multiprocessing
-            vr = VideoReader(sample.video_path, ctx=cpu(0))
+            vr = VideoReader(sample.video_path, ctx=cpu(0),num_threads=1)
         except Exception as e:
             # Fallback or strict error handling
             raise RuntimeError(f"Failed to open video {sample.video_path}: {e}")
