@@ -9,6 +9,7 @@ import argparse
 import os
 import sys
 import numpy as np
+from src.datasets.utils import get_frame_count_and_fps, get_video
 
 
 def check_session(session, video_root, target_root, chunk_size):
@@ -16,11 +17,18 @@ def check_session(session, video_root, target_root, chunk_size):
     target_path = os.path.join(target_root, session + ".npy")
 
     if not os.path.isdir(video_path):
+        ext = ['mp4', 'mpg']
+        video_path = get_video(video_root, session, ext)
+        real_frame_count, real_fps = get_frame_count_and_fps(video_path)
+        # logical
+        scale_factor = real_fps / 24
+        frame_length = int(real_frame_count / scale_factor)
         return False, f"Missing video directory: {video_path}"
+    else:
+        frame_length = len(os.listdir(video_path))
     if not os.path.isfile(target_path):
         return False, f"Missing target file: {target_path}"
 
-    frame_length = len(os.listdir(video_path))
     num_chunks = int(frame_length // chunk_size)
 
     try:

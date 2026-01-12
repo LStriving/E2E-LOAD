@@ -1,6 +1,8 @@
 import json
 from tqdm import tqdm
 from decord import VideoReader, cpu
+
+from tools.check_len_consistency import check_session
 from .thumos import *
 
 @DATASET_REGISTRY.register()
@@ -90,7 +92,15 @@ class Surgery(torch.utils.data.Dataset):
             os.makedirs(self.target_root)
         exist_targets = os.listdir(self.target_root)
         if len(exist_targets) == len(self.cfg.DATA.TRAIN_SESSION_SET) + len(self.cfg.DATA.TEST_SESSION_SET):
-            return
+            # TODO: santity check
+            # Gather sessions
+            sessions = self.cfg.DATA.TRAIN_SESSION_SET + self.cfg.DATA.TEST_SESSION_SET
+            for session in sessions:
+                ok, _ = check_session(session, self.video_root, self.target_root, self.cfg.MODEL.CHUNK_SIZE)
+                if not ok:
+                    break
+                else:
+                    return
         self.__create_target()
         
     def __create_target(self):
