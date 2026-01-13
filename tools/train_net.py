@@ -60,7 +60,7 @@ def train_epoch(
     """
     # Enable train mode.
     model.train()
-    model = torch.compile(model)
+    # model = torch.compile(model)
     train_meter.iter_tic()
     data_size = len(train_loader) 
     # pdb.set_trace() 

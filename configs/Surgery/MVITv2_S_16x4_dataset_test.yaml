@@ -9,12 +9,13 @@ TRAIN:
   AUTO_RESUME: False 
   PRINT_VERPOSE: False 
   CHECKPOINT_EPOCH_RESET: True 
-  CHECKPOINT_FILE_PATH: ckpt/checkpoint_epoch_00018.pyth
+  CHECKPOINT_FILE_PATH: ckpt/checkpoint_epoch_00026.pyth
   CHECKPOINT_TYPE: "pytorch" 
 
 DATA:
   TARGET_FORDER: 'targets/masked_8'
   DATA_INFO: 'data/data_info.json'
+  ANNO: data/annos/Surgery/masked_label_v5.json
   # FRAME_TEMPL: '{}_{}.jpg'
   USE_OFFSET_SAMPLING: True
   DECODING_BACKEND: torchvision
@@ -28,6 +29,7 @@ DATA:
   MULTI_LABEL: True
   PATH_PREFIX: "Surgery"
   ZERO_MASK: True 
+  VIDEO_FORDER: videos
 
 MVIT:
   ZERO_DECAY_POS_CLS: False
@@ -212,7 +214,7 @@ TEST:
   BATCH_SIZE: 1 
   NUM_SPATIAL_CROPS: 1
   NUM_ENSEMBLE_VIEWS: 5
-  CHECKPOINT_FILE_PATH: ckpt/checkpoint_epoch_00018.pyth
+  CHECKPOINT_FILE_PATH: ckpt/checkpoint_epoch_00026.pyth
 
 DEMO:
   ENABLE: False
