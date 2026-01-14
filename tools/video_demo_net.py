@@ -160,9 +160,9 @@ def demo(cfg):
                 work_frames = torch.tensor(raw_frames).cuda(non_blocking=True).float() # [T, H, W, C]
                 work_frames = work_frames / 255.0
                 # Permute: [T, H, W, C] -> [C, T, H, W] (For Normalize/Crop)
-                work_frames = work_frames.permute(3, 0, 1, 2)
                 # Normalize (Manual implementation on GPU is faster than creating transforms)
                 work_frames = (work_frames - mean_tensor) / std_tensor
+                work_frames = work_frames.permute(3, 0, 1, 2)
 
                 # Load the images;
                 min_scale = cfg.DATA.TEST_CROP_SIZE
