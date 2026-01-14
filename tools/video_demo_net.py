@@ -99,7 +99,7 @@ class VideoInferenceRunner:
         """Runs inference for a single video session."""
         
         # 1. Path Setup
-        video_dir = data_root / self.cfg.DATA.VIDEO_FOLDER
+        video_dir = data_root / self.cfg.DATA.VIDEO_FOLDER 
         target_dir = data_root / self.cfg.DATA.TARGET_FOLDER
         
         video_path = utils.get_video(str(video_dir), session_name, self.cfg.DATA.VIDEO_EXT)
@@ -118,11 +118,8 @@ class VideoInferenceRunner:
         gt_target = None
         if target_path.exists():
             gt_target = np.load(target_path)
-            # Clip target to match chunks
             min_len = min(num_chunks, gt_target.shape[0])
             gt_target = gt_target[:min_len]
-            if num_chunks != gt_target.shape[0]:
-                logger.warning(f"Shape mismatch: {session_name} target vs chunks")
 
         # 5. Prepare Chunks
         frame_indices = np.arange(frame_length)
@@ -132,56 +129,57 @@ class VideoInferenceRunner:
             axis=0
         ))
         
-        # Temporal Downsampling within chunks
         if self.cfg.MODEL.CHUNK_SIZE > 1:
             chunk_indices = chunk_indices[:, self.cfg.MODEL.CHUNK_SAMPLE_RATE // 2 :: self.cfg.MODEL.CHUNK_SAMPLE_RATE]
 
         # 6. Inference Loop
         preds = []
         collected_gts = []
-        self.model.empty_cache() # Clear cache before session
+        self.model.empty_cache() 
         
         with torch.no_grad():
-            work_range = range(self.cfg.MODEL.WORK_MEMORY_NUM_SAMPLES, num_chunks + 1)
-            # Add initial 0 to range
-            full_range = [0] + list(work_range)
+            # === RESTORED ORIGINAL LOOP STRUCTURE ===
+            # This ensures work_start increments by 1 (sliding window), not jumping chunks
+            range_start = range(0, num_chunks + 1)
+            range_end = range(self.cfg.MODEL.WORK_MEMORY_NUM_SAMPLES, num_chunks + 1)
             
-            for work_start, work_end in zip(full_range[:-1], full_range[1:]):
+            for work_start, work_end in zip(range_start, range_end):
                 
-                # A. Determine Frames to Load
-                # Logic: On step 0, load the whole memory. On subsequent steps, only load the new chunk.
+                # work_indices calculation must mimic original: [start, end)
+                # This ensures `last_idx` aligns with the sliding window edge
                 work_indices = np.arange(work_start, work_end).clip(0)
                 work_indices = work_indices[::self.cfg.MODEL.WORK_MEMORY_SAMPLE_RATE]
                 
                 if work_start == 0:
+                    # First step: Load full batch
                     selected_chunks = chunk_indices[work_indices]
                     frames_to_load = selected_chunks.flatten()
                     if gt_target is not None:
                         current_gt = gt_target[::self.cfg.MODEL.WORK_MEMORY_SAMPLE_RATE][work_indices]
                 else:
+                    # Sliding step: Load only the newest frame at the end of the window
                     last_idx = work_indices[-1]
                     frames_to_load = chunk_indices[last_idx]
                     if gt_target is not None:
+                        # Original logic: take the last target corresponding to the new frame
                         current_gt = [gt_target[::self.cfg.MODEL.WORK_MEMORY_SAMPLE_RATE][last_idx]]
 
                 frames_to_load = np.clip(frames_to_load, 0, real_frame_count - 1)
                 
-                # B. Prepare Long Memory Indices
+                # Long Memory Indices (Correctly relative to work_start)
                 ulong_indices, repeat_times, mask = self._calculate_memory_indices(work_start)
 
-                # C. Load & Process Images
+                # Load & Process
                 raw_frames = vr.get_batch(frames_to_load).asnumpy()
                 input_tensor = self._preprocess_frame_batch(raw_frames)
-                # Check Input Tensor
-                if torch.isnan(input_tensor).any():
-                    print("CRITICAL: Input tensor contains NaNs!")
 
-                # D. Model Forward
-                # Note: stream_inference is stateful
+                # Inference
+                start = time.time()
                 scores = self.model.stream_inference(input_tensor, ulong_indices, repeat_times, mask)
+                duration = time.time() - start
                 scores = scores[0].softmax(dim=-1).cpu().numpy()
 
-                # E. Collect Results
+                # Collect Results
                 if work_start == 0:
                     preds.extend(list(scores))
                 else:
@@ -190,8 +188,7 @@ class VideoInferenceRunner:
                 if gt_target is not None:
                     collected_gts.extend(current_gt)
 
-        return np.array(preds), (np.array(collected_gts) if gt_target is not None else None), num_chunks
-
+        return np.array(preds), (np.array(collected_gts) if gt_target is not None else None), num_chunks, duration
 
 def demo(cfg):
     """
@@ -223,12 +220,12 @@ def demo(cfg):
 
     for i, session in enumerate(tqdm(sessions)):
         try:
-            start_time = time.time()
+            
             
             # Run Inference
-            pred_scores, gt_targets, num_chunks = runner.run_session(session, data_root)
+            pred_scores, gt_targets, num_chunks, duration = runner.run_session(session, data_root)
             
-            duration = time.time() - start_time
+            
             total_inference_time += duration
             total_frames_processed += num_chunks
             
