@@ -68,7 +68,7 @@ def demo(cfg):
         target_root = os.path.join(data_root, cfg.DATA.TARGET_FORDER)
 
 
-        video_path = utils.get_video(data_root, cfg.DATA.VIDEO_FORDER, session)
+        video_path = utils.get_video(os.path.join(data_root, cfg.DATA.VIDEO_FORDER), session, cfg.DATA.VIDEO_EXT)
         vr = VideoReader(video_path, ctx=cpu(0), num_threads=1)
         real_frame_count = len(vr)
         scale_factor = vr.get_avg_fps() / cfg.DATA.TARGET_FPS
