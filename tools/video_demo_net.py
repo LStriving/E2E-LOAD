@@ -156,7 +156,7 @@ def demo(cfg):
                 memory_key_padding_mask = torch.as_tensor(memory_key_padding_mask.astype(np.float32)).unsqueeze(0).cuda()
 
                 # Load images
-                raw_frames = vr.get_batch(frames_indices_to_load)
+                raw_frames = vr.get_batch(frames_indices_to_load).asnumpy()
                 work_frames = torch.tensor(raw_frames).cuda(non_blocking=True).float() # [T, H, W, C]
                 work_frames = work_frames / 255.0
                 # Permute: [T, H, W, C] -> [C, T, H, W] (For Normalize/Crop)
