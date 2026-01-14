@@ -56,8 +56,8 @@ def demo(cfg):
     pred_scores = {}
     gt_targets = {}
     # 预定义 GPU 上的 Normalization (利用 Broadcasting，不需要复杂的 Transform)
-    mean_tensor = torch.tensor(cfg.DATA.MEAN, device='cuda').view(1, 3, 1, 1)
-    std_tensor = torch.tensor(cfg.DATA.STD, device='cuda').view(1, 3, 1, 1)
+    mean_tensor = torch.tensor(cfg.DATA.MEAN, device='cuda').view(1, 1, 1, 3)
+    std_tensor = torch.tensor(cfg.DATA.STD, device='cuda').view(1, 1, 1, 3)
 
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     save_path = cfg.OUTPUT_DIR + '_'
@@ -159,9 +159,9 @@ def demo(cfg):
                 raw_frames = vr.get_batch(frames_indices_to_load).asnumpy()
                 work_frames = torch.tensor(raw_frames).cuda(non_blocking=True).float() # [T, H, W, C]
                 work_frames = work_frames / 255.0
-                # Permute: [T, H, W, C] -> [C, T, H, W] (For Normalize/Crop)
                 # Normalize (Manual implementation on GPU is faster than creating transforms)
                 work_frames = (work_frames - mean_tensor) / std_tensor
+                # Permute: [T, H, W, C] -> [C, T, H, W] (For Normalize/Crop)
                 work_frames = work_frames.permute(3, 0, 1, 2)
 
                 # Load the images;
