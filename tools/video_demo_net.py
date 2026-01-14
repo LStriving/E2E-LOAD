@@ -28,9 +28,10 @@ logger = log_utils.get_logger(__name__)
 
 
 class VideoInferenceRunner:
-    def __init__(self, cfg):
+    def __init__(self, cfg, gpu_id=0):
         self.cfg = cfg
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.gpu_id = gpu_id
+        self.device = torch.device(f'cuda:{gpu_id}')
         
         # Pre-calculate normalization tensors on GPU to speed up loop
         self.mean = torch.tensor(cfg.DATA.MEAN, device=self.device).view(1, 1, 1, 3)
@@ -138,7 +139,6 @@ class VideoInferenceRunner:
         self.model.empty_cache() 
         
         with torch.no_grad():
-            # === RESTORED ORIGINAL LOOP STRUCTURE ===
             # This ensures work_start increments by 1 (sliding window), not jumping chunks
             range_start = range(0, num_chunks + 1)
             range_end = range(self.cfg.MODEL.WORK_MEMORY_NUM_SAMPLES, num_chunks + 1)
@@ -218,13 +218,10 @@ def demo(cfg):
     
     data_root = Path(cfg.DATA.PATH_TO_DATA_DIR) / cfg.DATA.PATH_PREFIX
 
-    for i, session in enumerate(tqdm(sessions)):
+    for i, session in enumerate(tqdm(sessions, desc='Running inferring videos...')):
         try:
-            
-            
             # Run Inference
             pred_scores, gt_targets, num_chunks, duration = runner.run_session(session, data_root)
-            
             
             total_inference_time += duration
             total_frames_processed += num_chunks
