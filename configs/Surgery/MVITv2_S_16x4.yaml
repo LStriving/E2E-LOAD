@@ -29,7 +29,7 @@ DATA:
   MULTI_LABEL: True
   PATH_PREFIX: "Surgery"
   ZERO_MASK: True 
-  VIDEO_FORDER: videos
+  VIDEO_FOLDER: videos
 
 MVIT:
   ZERO_DECAY_POS_CLS: False

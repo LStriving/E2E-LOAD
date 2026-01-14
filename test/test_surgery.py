@@ -149,7 +149,7 @@ class TestSurgeryDataset(unittest.TestCase):
         self.mode = "test"
         # self.mode = "train"
         self.dataset = Surgery(self.cfg, mode=self.mode)
-        self.cfg.DATA.VIDEO_FORDER = "frames"
+        self.cfg.DATA.VIDEO_FOLDER = "frames"
         self.dataset1 = Thumos(self.cfg, mode=self.mode)
         self.loader = DataLoader(self.dataset, sampler=ReverseSampler(self.dataset))
         self.loader1= DataLoader(self.dataset1, sampler=ReverseSampler(self.dataset1))

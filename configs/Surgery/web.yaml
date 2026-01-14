@@ -28,7 +28,7 @@ DATA:
   PATH_PREFIX: "Surgery"
   ZERO_MASK: True 
   PATH_TO_DATA_DIR: ""
-  VIDEO_FORDER: ""
+  VIDEO_FOLDER: ""
 
 MVIT:
   ZERO_DECAY_POS_CLS: True

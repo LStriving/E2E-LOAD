@@ -61,7 +61,7 @@ def demo(cfg):
         data_root = os.path.join(cfg.DATA.PATH_TO_DATA_DIR, cfg.DATA.PATH_PREFIX)
         # target_root = os.path.join(data_root, cfg.DATA.TARGET_FORDER)
 
-        video_path = os.path.join(data_root, cfg.DATA.VIDEO_FORDER, session)
+        video_path = os.path.join(data_root, cfg.DATA.VIDEO_FOLDER, session)
         # target_path = os.path.join(target_root, session + ".npy")
         
         # Load the related targets; 

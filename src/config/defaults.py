@@ -875,7 +875,7 @@ _C.DATA.PATH_TO_DATA_DIR = (
 _C.DATA.PATH_PREFIX = ""  # 'thumos'
 
 # the forders that contains all the frame forder;
-_C.DATA.VIDEO_FORDER = "frames"
+_C.DATA.VIDEO_FOLDER = "frames"
 
 # video extension list
 _C.DATA.VIDEO_EXT = ['mp4', 'avi', 'mkv', 'webm', 'mov', 'mpg']

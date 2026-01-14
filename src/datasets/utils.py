@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import pdb
+import torch
+from enum import IntEnum
+from typing import Optional, List, Tuple
 
 import logging
 import numpy as np
@@ -180,48 +182,49 @@ def pack_pathway_output(cfg, frames):
             )
         )
     return frame_list
-
+class SpatialStrategy(IntEnum):
+    RANDOM_JITTER_CROP = -1
+    CENTER_CROP_SCALED = -2
+    LEFT_TOP_CROP = 0
+    CENTER_CROP = 1
+    RIGHT_BOTTOM_CROP = 2
 
 def spatial_sampling(
-    frames,
-    spatial_idx=-1,
-    min_scale=256,
-    max_scale=320,
-    crop_size=224,
-    random_horizontal_flip=True,
-    inverse_uniform_sampling=False,
-    aspect_ratio=None,
-    scale=None,
-    motion_shift=False,
-):
+    frames: torch.Tensor,
+    spatial_idx: int = -1,
+    min_scale: int = 256,
+    max_scale: int = 320,
+    crop_size: int = 224,
+    random_horizontal_flip: bool = True,
+    inverse_uniform_sampling: bool = False,
+    aspect_ratio: Optional[List[float]] = None,
+    scale: Optional[List[float]] = None,
+    motion_shift: bool = False,
+) -> torch.Tensor:
     """
-    Perform spatial sampling on the given video frames. If spatial_idx is
-    -1, perform random scale, random crop, and random flip on the given
-    frames. If spatial_idx is 0, 1, or 2, perform spatial uniform sampling
-    with the given spatial_idx.
+    Perform spatial sampling (cropping/scaling) on video frames.
+
     Args:
-        frames (tensor): frames of images sampled from the video. The
-            dimension is `num frames` x `height` x `width` x `channel`.
-        spatial_idx (int): if -1, perform random spatial sampling. If 0, 1,
-            or 2, perform left, center, right crop if width is larger than
-            height, and perform top, center, buttom crop if height is larger
-            than width.
-        min_scale (int): the minimal size of scaling.
-        max_scale (int): the maximal size of scaling.
-        crop_size (int): the size of height and width used to crop the
-            frames.
-        inverse_uniform_sampling (bool): if True, sample uniformly in
-            [1 / max_scale, 1 / min_scale] and take a reciprocal to get the
-            scale. If False, take a uniform sample from [min_scale,
-            max_scale].
-        aspect_ratio (list): Aspect ratio range for resizing.
-        scale (list): Scale range for resizing.
-        motion_shift (bool): Whether to apply motion shift for resizing.
+        frames (torch.Tensor): Input video frames [T, H, W, C].
+        spatial_idx (int): Sampling strategy. 
+            -1: Random scaling/cropping/flipping (Training).
+            -2: Resize short side to crop_size, then center crop (Validation).
+             0, 1, 2: Deterministic spatial crops (Testing).
+        min_scale (int): Min size for resizing.
+        max_scale (int): Max size for resizing.
+        crop_size (int): Output height/width.
+        random_horizontal_flip (bool): Enable random flipping (only for strategy -1).
+        inverse_uniform_sampling (bool): Sampling method for scaling.
+        aspect_ratio (list, optional): Aspect ratio range.
+        scale (list, optional): Scale range.
+        motion_shift (bool): Use motion shift resizing.
+
     Returns:
-        frames (tensor): spatially sampled frames.
+        torch.Tensor: Transformed frames.
     """
-    assert spatial_idx in [-2, -1, 0, 1, 2] 
-    if spatial_idx == -1:  
+    
+    # 1. Randomized Training Strategy
+    if spatial_idx == SpatialStrategy.RANDOM_JITTER_CROP:
         if aspect_ratio is None and scale is None:
             frames, _ = transform.random_short_side_scale_jitter(
                 images=frames,
@@ -243,21 +246,27 @@ def spatial_sampling(
                 scale=scale,
                 ratio=aspect_ratio,
             )
+            
         if random_horizontal_flip:
             frames, _ = transform.horizontal_flip(0.5, frames)
-    elif spatial_idx == -2:
+
+    # 2. Resized Center Crop (Likely Validation/Zero-shot)
+    elif spatial_idx == SpatialStrategy.CENTER_CROP_SCALED:
         frames, _ = transform.random_short_side_scale_jitter(
             frames,
             min_size=crop_size,
             max_size=crop_size,
         )
         frames, _ = transform.uniform_crop(
-            frames, crop_size, spatial_idx=1
-        )  
+            frames, crop_size, spatial_idx=SpatialStrategy.CENTER_CROP
+        )
+
+    # 3. Deterministic Testing Strategy (0, 1, 2)
     else:
-        # The testing is deterministic and no jitter should be performed.
-        # min_scale, max_scale, and crop_size are expect to be the same.
-        assert len({min_scale, max_scale}) == 1
+        # Ensure deterministic behavior
+        if min_scale != max_scale:
+            raise ValueError(f"Deterministic sampling requires min_scale == max_scale, got {min_scale}, {max_scale}")
+            
         frames, _ = transform.random_short_side_scale_jitter(
             frames, min_scale, max_scale
         )

@@ -106,7 +106,7 @@ class Thumos(torch.utils.data.Dataset):
 
         ## Video Path
         self.video_root = os.path.join(
-            self.data_root, self.cfg.DATA.VIDEO_FORDER
+            self.data_root, self.cfg.DATA.VIDEO_FOLDER
         )
 
         ## Target Path
