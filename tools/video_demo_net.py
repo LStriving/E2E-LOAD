@@ -157,7 +157,7 @@ def demo(cfg):
 
                 # Load images
                 raw_frames = vr.get_batch(frames_indices_to_load)
-                work_frames = raw_frames.cuda(non_blocking=True).float() # [T, H, W, C]
+                work_frames = torch.tensor(raw_frames).cuda(non_blocking=True).float() # [T, H, W, C]
                 work_frames = work_frames / 255.0
                 # Permute: [T, H, W, C] -> [C, T, H, W] (For Normalize/Crop)
                 work_frames = work_frames.permute(3, 0, 1, 2)
