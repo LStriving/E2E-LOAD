@@ -1354,7 +1354,7 @@ _C.DEMO.COMMON_CLASS_NAMES = [
 # Slow-motion rate for the visualization. The visualized portions of the
 # video will be played `_C.DEMO.SLOWMO` times slower than usual speed.
 _C.DEMO.SLOWMO = 1
-
+_C.DATA_MODE = 'frame'
 # add config node
 _C.DETECTION = CfgNode()
 _C.DETECTION.ENABLE = False

@@ -14,6 +14,7 @@ from src.utils.parser import load_config, parse_args
 from src.utils.misc import launch_job
 
 from demo_net import demo
+from video_demo_net import demo as video_demo
 from test_net import test
 from train_net import train
 from visualization import visualize
@@ -52,7 +53,10 @@ def main():
 
         # Run demo.
         if cfg.DEMO.ENABLE:
-            demo(cfg)
+            if cfg.DATA_MODE == 'video':
+                video_demo(cfg)
+            elif cfg.DATA_MODE == 'frame':
+                demo(cfg)
 
 
 if __name__ == "__main__":
