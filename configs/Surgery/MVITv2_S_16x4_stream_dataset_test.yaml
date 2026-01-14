@@ -13,7 +13,8 @@ TRAIN:
 
 DATA:
   USE_OFFSET_SAMPLING: True
-  TARGET_FORDER: 'targets/masked_8'
+  TARGET_FORDER: 'targets/class8'
+  DATA_INFO: 'data/data_info.json'
   # FRAME_TEMPL: '{}_{}.jpg'
   DATA_INFO: 'data/data_info.json'
   DECODING_BACKEND: torchvision
@@ -27,6 +28,7 @@ DATA:
   MULTI_LABEL: True
   PATH_PREFIX: "Surgery"
   ZERO_MASK: True 
+  VIDEO_FORDER: videos
 
 MVIT:
   ZERO_DECAY_POS_CLS: True
@@ -200,7 +202,7 @@ DEMO:
   ALL_TEST: True 
 
 DATA_LOADER:
-  NUM_WORKERS: 32
+  NUM_WORKERS: 16
   PIN_MEMORY: False
 
 NUM_GPUS: 1

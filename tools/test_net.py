@@ -7,17 +7,14 @@ import pdb
 import numpy as np
 import os
 import pickle
-import json
 import torch
 
 import src.utils.checkpoint as cu
 import src.utils.distributed as du
 import src.utils.logging as logging
 import src.utils.misc as misc
-import src.visualization.tensorboard_vis as tb
 from src.datasets import loader
 from src.models import build_model
-from src.utils.env import pathmgr
 from src.utils.meters import TestMeter
 from src.utils.version import get_reproducibility_info
 
@@ -51,7 +48,7 @@ def perform_test(test_loader, model, test_meter, cfg):
     for cur_iter, items in enumerate(test_loader): 
 
         if cfg.MODEL.LONG_MEMORY_ENABLE:
-            (work_frames, long_frames, long_key_padding_mask, labels, session, indice, num_frame    ) = items
+            (work_frames, long_frames, long_key_padding_mask, labels, session, indice, num_frame) = items
         else:
             (
                 work_frames,
