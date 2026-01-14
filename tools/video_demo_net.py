@@ -80,10 +80,10 @@ def demo(cfg):
         total_frames += num_chunks
         
         # Load the related targets; 
+        target_path = os.path.join(target_root, session + ".npy")
         if os.path.exists(target_path):
             target = np.load(target_path)
             found_target = True
-        target_path = os.path.join(target_root, session + ".npy")
         if found_target:
             # 简单的对齐检查，防止 crash
             min_len = min(num_chunks, target.shape[0])
