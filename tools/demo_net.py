@@ -59,7 +59,7 @@ def demo(cfg):
     # loading the video info; 
     for idx, session in enumerate(sessions):
         data_root = os.path.join(cfg.DATA.PATH_TO_DATA_DIR, cfg.DATA.PATH_PREFIX)
-        # target_root = os.path.join(data_root, cfg.DATA.TARGET_FORDER)
+        # target_root = os.path.join(data_root, cfg.DATA.TARGET_FOLDER)
 
         video_path = os.path.join(data_root, cfg.DATA.VIDEO_FOLDER, session)
         # target_path = os.path.join(target_root, session + ".npy")

@@ -883,7 +883,7 @@ _C.DATA.VIDEO_EXT = ['mp4', 'avi', 'mkv', 'webm', 'mov', 'mpg']
 
 _C.DATA.FRAME_TEMPL = "img_{:05d}.jpg"
 # the dataset that contain the all the video annotations at 4 FPS;
-_C.DATA.TARGET_FORDER = "targets"
+_C.DATA.TARGET_FOLDER = "targets"
 
 # dataset info;
 _C.DATA.DATA_INFO = "data/data_info.json"

@@ -146,7 +146,7 @@ class Surgery(torch.utils.data.Dataset):
 
         # TODO: remove target
         self.target_root = os.path.join(
-            self.data_root, self.cfg.DATA.TARGET_FORDER
+            self.data_root, self.cfg.DATA.TARGET_FOLDER
         )
         self._construct_target_tolocal()
         

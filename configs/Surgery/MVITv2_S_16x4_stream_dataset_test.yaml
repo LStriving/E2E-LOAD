@@ -13,7 +13,7 @@ TRAIN:
 
 DATA:
   USE_OFFSET_SAMPLING: True
-  TARGET_FORDER: 'targets/class8'
+  TARGET_FOLDER: 'targets/class8'
   DATA_INFO: 'data/data_info.json'
   # FRAME_TEMPL: '{}_{}.jpg'
   DATA_INFO: 'data/data_info.json'

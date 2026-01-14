@@ -115,7 +115,7 @@ class Tvseries(torch.utils.data.Dataset):
 
         ## Target Path
         self.target_root = os.path.join(
-            self.data_root, self.cfg.DATA.TARGET_FORDER
+            self.data_root, self.cfg.DATA.TARGET_FOLDER
         )
         # self.sessions contians all the {train/val} sessions;
         self.sessions = getattr(

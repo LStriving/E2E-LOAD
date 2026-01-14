@@ -15,7 +15,7 @@ DATA:
   USE_OFFSET_SAMPLING: True
   FRAME_TEMPL: '{}_{}.jpg'
   DATA_INFO: 'data/data_info.json'
-  TARGET_FORDER: 'media/input_data/Surgery/targets'
+  TARGET_FOLDER: 'media/input_data/Surgery/targets'
   DECODING_BACKEND: torchvision
   SAMPLING_RATE: 4
   TRAIN_JITTER_SCALES: [256, 320]
