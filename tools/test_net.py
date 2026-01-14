@@ -154,7 +154,7 @@ def test(cfg):
         test_meter = TestMeter(
             cfg = cfg,
             num_videos = test_loader.dataset.num_videos,  
-            num_clips=test_loader.dataset.num_clips,
+            num_clips=test_loader.dataset._num_clips,
             num_cls = cfg.MODEL.NUM_CLASSES,
             overall_iters = len(test_loader),
             multi_label=cfg.DATA.MULTI_LABEL,
