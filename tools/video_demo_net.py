@@ -14,12 +14,12 @@ from bisect import bisect_right
 import os.path as osp
 import sys
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+from tqdm import tqdm
+
 import src.utils.checkpoint as cu
 import src.utils.logging as logging
 from src.models import build_model
 
-
-import src.datasets.helper as helper
 import src.datasets.utils as utils
 from src.utils import evalution
 
@@ -63,7 +63,7 @@ def demo(cfg):
     save_path = cfg.OUTPUT_DIR + '_'
     
     # loading the video info; 
-    for idx, session in enumerate(sessions):
+    for idx, session in tqdm(enumerate(sessions)):
         data_root = os.path.join(cfg.DATA.PATH_TO_DATA_DIR, cfg.DATA.PATH_PREFIX)
         target_root = os.path.join(data_root, cfg.DATA.TARGET_FORDER)
 
