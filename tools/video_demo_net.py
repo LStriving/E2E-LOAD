@@ -43,8 +43,6 @@ class VideoInferenceRunner:
         logger.info("Building model...")
         model = build_model(self.cfg)
         model.eval()
-        
-        logger.info(f"Loading checkpoint from {self.cfg.TEST.CHECKPOINT_FILE_PATH}")
         cu.load_test_checkpoint(self.cfg, model)
         return model.to(self.device)
 
@@ -174,6 +172,9 @@ class VideoInferenceRunner:
                 # C. Load & Process Images
                 raw_frames = vr.get_batch(frames_to_load).asnumpy()
                 input_tensor = self._preprocess_frame_batch(raw_frames)
+                # Check Input Tensor
+                if torch.isnan(input_tensor).any():
+                    print("CRITICAL: Input tensor contains NaNs!")
 
                 # D. Model Forward
                 # Note: stream_inference is stateful
