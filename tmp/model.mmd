@@ -1,0 +1,37 @@
+graph TD
+    subgraph "Phase 1: 输入与嵌入 (Embedding)"
+    A_W["Work Input<br/>(B, C, T_work, H, W)"] --> B_W["Patch Embed"]
+    A_L["Long Input<br/>(B, C, T_long, H, W)"] --> B_L["Patch Embed"]
+    end
+
+    subgraph "Phase 2: 空间建模 (Spatial Stage)"
+    direction TB
+    N1["Reshape: T 融入 B<br/>(B*T, HW, C)"]
+    B_W --> N1
+    B_L --> N1
+    
+    C_Shared["Spatial MViT<br/>(共享权重的空间骨干网)"]
+    
+    N1 -- Work Tokens --> C_Shared
+    N1 -- Long Tokens --> C_Shared
+    
+    C_Shared -- Work Feats --> D_W["Reshape back<br/>(B, T_work, HW, C)"]
+    C_Shared -- Long Feats (Detached) --> D_L["Reshape back<br/>(B, T_long, HW, C)"]
+    end
+
+    subgraph "Phase 3: 记忆压缩 (Compression)"
+    D_L --> E_Comp["Temporal Compressor<br/>压缩长时记忆的时空维度"]
+    E_Comp --> F_Mem["Compressed Memory<br/>(Key / Value)"]
+    end
+
+    subgraph "Phase 4: 时序建模 (Temporal Stage)"
+    D_W --> G_Temp["Temporal MViT<br/>时序交互模块"]
+    F_Mem -.-> G_Temp
+    note["Work 做 Query<br/>Memory 做 Key/Value<br/>进行 Cross-Attention"]
+    end
+
+    subgraph "Phase 5: 输出 (Head)"
+    G_Temp --> H_Pool["Spatio-Temporal Pooling<br/>Global Avg 或 CLS Token"]
+    H_Pool --> I_Head["Projection Layer<br/>分类头"]
+    I_Head --> J_Out["Scores / Logits"]
+    end
