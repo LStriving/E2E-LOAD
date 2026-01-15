@@ -2,32 +2,21 @@
 
 
 """Video models."""
-
-import pdb
-
 import einops
 
 import math
 from functools import partial
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn.init import trunc_normal_
 
 import numpy as np 
 
 import src.utils.logging as logging
-import src.utils.weight_init_helper as init_helper
-
-from src.models.batchnorm_helper import get_norm
 from src.models.utils import (
-    calc_mvit_feature_geometry,
-    get_3d_sincos_pos_embed,
     round_width,
-    validate_checkpoint_wrapper_import,
 )
 
-from ..build import MODEL_REGISTRY
+from src.models.build import MODEL_REGISTRY
 from .attention_compressor import MultiScaleBlock
 
 from fairscale.nn.checkpoint import (

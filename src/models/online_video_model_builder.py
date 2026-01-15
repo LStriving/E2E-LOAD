@@ -3,32 +3,17 @@
 
 """Video models."""
 
-import pdb
-
-import einops
-import math
+import bisect
 from functools import partial
+import einops
+import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.nn.init import trunc_normal_
 
-import bisect
-import numpy as np
-
 import src.utils.logging as logging
-import src.utils.weight_init_helper as init_helper
-from src.models.batchnorm_helper import get_norm
-from src.models.common import TwoStreamFusion
-from src.models.utils import (
-    calc_mvit_feature_geometry,
-    get_3d_sincos_pos_embed,
-    round_width,
-    validate_checkpoint_wrapper_import,
-    # generate_square_subsequent_mask,
-)
 
-from . import head_helper, operators, resnet_helper, stem_helper  # noqa
+from . import head_helper, stem_helper  # noqa
 from .build import MODEL_REGISTRY
 
 from .modules import SMViT
@@ -132,7 +117,7 @@ class STMViT(nn.Module):
         self.spatial_mvit = SMViT(cfg)  # dim_out = 384; for spatial and tempora; 
         if cfg.MODEL.LONG_MEMORY_ENABLE:
             self.temporal_compressor = TMViTCompressor(cfg)
-        self.temporal_mvit = TMViTWork(cfg) 
+        self.temporal_mvit = TMViTWork(cfg) # cfg.MVIT.TEMPORAL.OUTPUT_DIM modified in here
         
         if self.cls_embed_on: 
             self.cls_token = nn.Parameter(
@@ -142,7 +127,7 @@ class STMViT(nn.Module):
         if self.drop_rate > 0.0:
             self.pos_drop = nn.Dropout(p=self.drop_rate)
 
-        logit_dim = cfg.MVIT.TEMPORAL.OUTPUT_DIM  
+        logit_dim = cfg.MVIT.TEMPORAL.OUTPUT_DIM
         
         self.norm = norm_layer(logit_dim) 
         self.norm_stem = (

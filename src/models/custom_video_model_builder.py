@@ -18,21 +18,13 @@ import torch.nn.functional as F
 from torch.nn.init import trunc_normal_
 
 import src.utils.logging as logging
-import src.utils.weight_init_helper as init_helper
-from src.models.batchnorm_helper import get_norm
-from src.models.common import TwoStreamFusion
 from src.models.utils import (
     calc_mvit_feature_geometry,
     get_3d_sincos_pos_embed,
     round_width,
-    validate_checkpoint_wrapper_import,
 )
 
-from . import head_helper, operators, resnet_helper, stem_helper  # noqa
-from .build import MODEL_REGISTRY
-
-from .modules import SMViT
-from .modules import TMViTWork
+from . import head_helper, stem_helper  # noqa
 
 from fairscale.nn.checkpoint import (
     checkpoint_wrapper,

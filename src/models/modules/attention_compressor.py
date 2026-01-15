@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-
-import pdb
-
 import einops
 
 import numpy
@@ -12,7 +9,6 @@ import torch.nn.functional as F
 from torch.nn.init import trunc_normal_
 
 from src.models.common import DropPath, Mlp
-from src.models.utils import generate_casual_mask
 
 
 def attention_pool(
