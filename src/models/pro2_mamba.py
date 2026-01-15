@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import einops
+import pdb
 
 if __name__ == '__main__':
     import os
@@ -44,7 +45,7 @@ class TransientExtractor(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         # 获取参数
-        self.dim = cfg.MVIT.EMBED_DIM
+        self.dim = cfg.MVIT.TEMPORAL.EMBED_DIM
         self.dilations = getattr(cfg.MODEL, 'DILATION_RATES', [1, 6, 12])
 
         # 融合 MLP
@@ -162,7 +163,7 @@ class DualStreamMamba(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         
-        dim = cfg.MVIT.EMBED_DIM
+        dim = cfg.MVIT.TEMPORAL.EMBED_DIM
         d_state = getattr(cfg.MODEL, 'MAMBA_STATE', 16)
         d_conv = getattr(cfg.MODEL, 'MAMBA_CONV', 4)
         expand = getattr(cfg.MODEL, 'MAMBA_EXPAND', 2)
@@ -225,7 +226,7 @@ class DPPE_Head(nn.Module):
     def __init__(self, cfg):
         super().__init__()
 
-        dim = cfg.MVIT.EMBED_DIM
+        dim = cfg.MVIT.TEMPORAL.EMBED_DIM
         num_classes = cfg.MODEL.NUM_CLASSES
         self.lambda_val = getattr(cfg.MODEL, 'DPPE_LAMBDA', 0.5)
 
@@ -257,15 +258,28 @@ class DPPE_Head(nn.Module):
         if prev_probs is None:
             context = torch.zeros(B, T, self.num_classes, device=z_t.device)
         else:
-            # prev_probs: (B, C) -> (B, 1, C)
-            if prev_probs.dim() == 2: prev_probs = prev_probs.unsqueeze(1)
-            # 简单处理：假设 prev_probs 是上一帧的，直接用于当前帧演化
-            context = torch.matmul(prev_probs, self.transition_matrix)
-            if is_sequence and T > 1:
-                # 训练模式下简单的 Context 模拟 (Shifted GT 外部传入 或 全0)
-                # 这里为了简化，Sequence 模式如果没传 Shifted GT，就用0
-                pass
+            # prev_probs 可能是 (B, C) 或 (B, T_labels, C)
+            if prev_probs.dim() == 2: 
+                prev_probs = prev_probs.unsqueeze(1) # (B, 1, C)
+            
+            # === [关键修复] ===
+            # 检查 prev_probs 的时间维度 T_p 是否与 z_t 的 T 一致
+            T_p = prev_probs.shape[1]
+            if T_p != T:
+                if T_p > T:
+                    # 如果标签比视频长，截取对应部分 (假设是对齐的)
+                    prev_probs = prev_probs[:, :T, :]
+                else:
+                    # 如果标签比视频短 (罕见)，重复或补零，这里抛出警告或错误更安全
+                    # 为了鲁棒性，这里选择重复最后一步 (Broadcasting) 或 报错
+                    # 简单处理：如果 T=1 且 T_p > 1，上面已经截取了；
+                    # 如果 T > T_p，通常是数据加载问题。
+                    pass 
 
+            # 应用转移矩阵 A: previous_state @ A
+            context = torch.matmul(prev_probs, self.transition_matrix)
+
+        # pdb.set_trace()
         delta_p = self.evolve_mlp(torch.cat([z_t, context], dim=-1)) # (B, T, D)
         
         # Dynamic Score (using query refinement trick)
@@ -319,7 +333,7 @@ class Pro2Mamba(nn.Module):
         self.tess_encoder = DualStreamMamba(cfg)
         self.head = DPPE_Head(cfg)
         
-        self.norm = nn.LayerNorm(embed_dim)
+        self.norm = nn.LayerNorm(cfg.MVIT.TEMPORAL.EMBED_DIM)
         
         self.apply(self._init_weights)
 
@@ -342,6 +356,7 @@ class Pro2Mamba(nn.Module):
         Input: (B, C, T, H, W)
         Output: Tokens (B, T, N, D)
         """
+        pdb.set_trace()
         work_inputs, bcthw_work = self.patch_embed(x, keep_spatial=True)  
         B, C, T_work, H, W = list(bcthw_work) 
         work_inputs = einops.rearrange(work_inputs, "b c t h w -> (b t) (h w) c")  # torch.Size([64, 3136, 96])
@@ -352,7 +367,7 @@ class Pro2Mamba(nn.Module):
             )  # Expand for each frames; 
             work_inputs = torch.cat((cls_tokens, work_inputs), dim=1)
         
-        work_inputs, hw_work = self.spatial_mvit(work_inputs, bcthw_work) # bt hw c
+        work_inputs, _ = self.spatial_mvit(work_inputs, bcthw_work) # bt hw c
         work_inputs = einops.rearrange(work_inputs, "(b t) hw c-> b t hw c", b=B, t=T_work) 
         return work_inputs
 
@@ -402,7 +417,7 @@ class Pro2Mamba(nn.Module):
         x: (B, C, H, W) - Single Frame (T=1)
         prev_probs: (B, C) - Probability from t-1
         """
-        x = x.unsqueeze(2) # (B, C, 1, H, W)
+        x = x.unsqueeze(2) # (B, C, 1, H, W) # TODO: should not unsqueeze
         tokens = self._extract_spatial(x) # (B, 1, N, D)
         tokens = tokens.squeeze(1) # (B, N, D)
         
@@ -493,7 +508,8 @@ if __name__ == "__main__":
     #     'pool_type': 'avg'
     # }
     
-    T = 8
+    T = 3
+    t = T // (cfg.MODEL.CHUNK_SIZE // cfg.MODEL.CHUNK_SAMPLE_RATE)
     # cfg.update(tmp) 
     patch_stride = cfg.MVIT.PATCH_STRIDE 
     cfg.MVIT.SPATIAL.PATCH_DIMS_WORK = cfg.MVIT.SPATIAL.PATCH_DIMS_LONG = [cfg.MODEL.WORK_MEMORY_NUM_SAMPLES, 
@@ -503,7 +519,7 @@ if __name__ == "__main__":
     model.empty_cache()
     # Train
     dummy_input = torch.randn(2, 3, T, 224, 224) # B, C, T, H, W
-    dummy_target = torch.randint(0, cfg.MODEL.NUM_CLASSES - 1, (2, T))
+    dummy_target = torch.randint(0, cfg.MODEL.NUM_CLASSES - 1, (2, t))
     out = model(dummy_input, dummy_target)
     print("Train Logits:", out['logits'].shape)
     
@@ -513,9 +529,9 @@ if __name__ == "__main__":
     print("Loss:", loss.item())
     
     # Inference Step
-    model.eval()
-    model.empty_cache()
-    frame = torch.randn(2, 3, 224, 224)
-    prev_prob = torch.zeros(2, 7)
-    step_logits = model.stream_inference(frame, prev_prob)
-    print("Inference Logits:", step_logits.shape)
+    # model.eval()
+    # model.empty_cache()
+    # frame = torch.randn(2, 3, 224, 224)
+    # prev_prob = torch.zeros(2, cfg.MODEL.NUM_CLASSES)
+    # step_logits = model.stream_inference(frame, prev_prob) # need to load 3 frames!
+    # print("Inference Logits:", step_logits.shape)

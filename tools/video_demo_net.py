@@ -169,10 +169,10 @@ class VideoInferenceRunner:
                 # Long Memory Indices (Correctly relative to work_start)
                 ulong_indices, repeat_times, mask = self._calculate_memory_indices(work_start)
 
-                # Load & Process
+                # Load & Process # (96, 256, 456, 3)
                 raw_frames = vr.get_batch(frames_to_load).asnumpy()
                 input_tensor = self._preprocess_frame_batch(raw_frames)
-
+                # ([1, 3, 96, 224, 224])
                 # Inference
                 start = time.time()
                 scores = self.model.stream_inference(input_tensor, ulong_indices, repeat_times, mask)
