@@ -3,41 +3,27 @@
 
 """Video models."""
 
-import pdb
-
 import einops
-import math
+import bisect
 from functools import partial
 import torch
+import numpy as np
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.nn.init import trunc_normal_
 
-import bisect
-import numpy as np
+from fairscale.nn.checkpoint import (
+    checkpoint_wrapper,
+) 
 
 import src.utils.logging as logging
-import src.utils.weight_init_helper as init_helper
-from src.models.batchnorm_helper import get_norm
-from src.models.common import TwoStreamFusion
-from src.models.utils import (
-    calc_mvit_feature_geometry,
-    get_3d_sincos_pos_embed,
-    round_width,
-    validate_checkpoint_wrapper_import,
-    # generate_square_subsequent_mask,
-)
 
-from . import head_helper, operators, resnet_helper, stem_helper  # noqa
+from . import head_helper, stem_helper  # noqa
 from .build import MODEL_REGISTRY
 
 from .modules import SMViT
 from .modules import TMViTWork
 from .modules import TMViTCompressor
 
-from fairscale.nn.checkpoint import (
-    checkpoint_wrapper,
-) 
 
 logger = logging.get_logger(__name__)
 
@@ -61,7 +47,7 @@ class STMViT(nn.Module):
         self.patch_stride = cfg.MVIT.PATCH_STRIDE  
         if self.use_2d_patch:
             self.patch_stride = [1] + self.patch_stride
-        self.T_work = cfg.MODEL.WORK_MEMORY_NUM_SAMPLES  
+        self.T_work = cfg.MODEL.WORK_MEMORY_NUM_SAMPLES  # 32
 
         self.H = (
             cfg.DATA.TRAIN_CROP_SIZE // self.patch_stride[1]
@@ -199,7 +185,6 @@ class STMViT(nn.Module):
         self.spatial_padding = None 
         self.temporal_mvit.empty_cache() 
 
-        
     def forward(self, work_inputs, long_inputs=None, long_memory_mask=None):
         # (B C T H W) for 3D input, (B C H W) for 2D input;
 
