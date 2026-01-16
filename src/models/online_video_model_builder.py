@@ -299,7 +299,7 @@ class STMViT(nn.Module):
                 spatial_padding = spatial_padding[:,:,-self.cfg.MVIT.PATCH_KERNEL[0]:]  
             
                 spatial_padding, bcthw = self.patch_embed(spatial_padding, keep_spatial=True)  
-            
+                # ([1, 96, 1, 56, 56])
                 B, C, T, H, W = bcthw # T = 1 
                 spatial_padding = einops.rearrange(spatial_padding, "b c t h w -> (b t) (h w) c")  # torch.Size([64, 3136, 96])
                 cls_tokens = self.cls_token.expand((B * (T)), -1, -1)      
@@ -314,14 +314,14 @@ class STMViT(nn.Module):
                 long_memory_mask = einops.rearrange(long_memory_mask, 'b (t sr) -> b t sr', sr = long_compression_rate)
                 long_memory_mask = torch.where(long_memory_mask>-1, 1, 0).sum(dim=-1)
                 long_memory_mask = torch.where(long_memory_mask<1, -torch.inf, 0)
-
+        # ([1, 3, 96, 224, 224]) bcthw
         work_inputs, bcthw = self.patch_embed(work_inputs, keep_spatial=True)  
-        B, C, T, H, W = bcthw # T = 1 
+        B, C, T, H, W = bcthw # [1, 96, 32, 56, 56] 
         work_inputs = einops.rearrange(work_inputs, "b c t h w -> (b t) (h w) c")  # torch.Size([64, 3136, 96])
         cls_tokens = self.cls_token.expand((B * (T)), -1, -1)      
         work_inputs = torch.cat((cls_tokens, work_inputs), dim=1)
-    
         work_inputs, _ = self.spatial_mvit(work_inputs, bcthw)  
+        # ([32, 197, 384])
         work_inputs = einops.rearrange(work_inputs, "(b t) hw c-> b t hw c", b=B, t=T)
         
         history_enable = False

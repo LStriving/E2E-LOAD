@@ -125,32 +125,38 @@ class TransientExtractor(nn.Module):
 
     def forward_inference(self, x_curr, cls_token_exists=False):
         """
-        x_curr: (B, N, D)
+        处理单帧输入，更新内部 buffer，返回单帧瞬态特征。
+        x_curr: (B, N, D) - 当前帧的 Patch Tokens
         """
         start_idx = 1 if cls_token_exists else 0
         x_sp = x_curr[:, start_idx:, :] # (B, N_s, D)
         
-        # Update buffer
+        # 1. 更新 Buffer (FIFO)
         self.history_buffer.append(x_sp)
+        # buffer 长度只需维持 max_k + 1
         if len(self.history_buffer) > self.max_k + 1:
             self.history_buffer.pop(0)
             
+        # 2. 计算多尺度差分
         diffs = []
         for k in self.dilations:
+            # 如果 Buffer 不够长，用最老的帧代替（或者用全0，视策略而定）
+            # 这里采用 repeat mode: 刚开始时 diff 为 0
             if len(self.history_buffer) > k:
                 prev = self.history_buffer[-(k+1)]
             else:
-                prev = self.history_buffer[0] # Fallback to oldest
+                prev = self.history_buffer[0] 
+            
             diffs.append(x_sp - prev)
             
-        # Compute Gate
+        # 3. 计算 Gate
+        # diffs: list of [(B, N_s, D)...]
         gate = self.compute_spatial_gate(diffs) # (B, 1, 1)
         
-        # Fuse
+        # 4. 融合与池化
         concat_diff = torch.cat(diffs, dim=-1) # (B, N_s, D*K)
         fused_diff = self.fuse_mlp(concat_diff) # (B, N_s, D)
         
-        # Pool
         pooled_diff = fused_diff.mean(dim=1) # (B, D)
         
         return pooled_diff * gate.squeeze(1)
@@ -378,7 +384,6 @@ class Pro2Mamba(nn.Module):
         """
         tokens = self._extract_spatial(x) # (B, T, N, D)
         B, T, N, D = tokens.shape
-        print("token:", tokens.shape)
         
         # 1. Long-term Feature: Aggregation
         if self.pool_type == 'cls' and self.cls_embed_on:
@@ -412,33 +417,60 @@ class Pro2Mamba(nn.Module):
             "prototypes": p_base
         }
 
-    def stream_inference(self, x, prev_probs=None):
+    def stream_inference(self, x_chunk, prev_probs=None):
         """
-        x: (B, C, H, W) - Single Frame (T=1)
-        prev_probs: (B, C) - Probability from t-1
+        在线推理模式：输入一个 Chunk，但在内部串行处理。
+        
+        Args:
+            x_chunk: (B, C, T, H, W) - 当前收到的视频片段
+            prev_probs: (B, C) - 上一个 Chunk 结束时的预测概率 (用于 DPPE 上下文)
+            
+        Returns:
+            chunk_logits: (B, T, C) - 当前 Chunk 每一帧的预测结果
+            last_probs: (B, C) - 当前 Chunk 最后一帧的概率 (传给下一个 Chunk)
         """
-        x = x.unsqueeze(2) # (B, C, 1, H, W) # TODO: should not unsqueeze
-        tokens = self._extract_spatial(x) # (B, 1, N, D)
-        tokens = tokens.squeeze(1) # (B, N, D)
+        B, C, T, H, W = x_chunk.shape
         
-        # 1. Long-term
-        if self.pool_type == 'cls' and self.cls_embed_on:
-            x_long = tokens[:, 0, :]
-        else:
-            start_idx = 1 if self.cls_embed_on else 0
-            x_long = tokens[:, start_idx:, :].mean(dim=1)
-        x_long = self.norm(x_long)
+        # 1. 批量提取空间特征 (Batch Spatial Extraction)
+        # 这样比在循环里做 embedding 更快，因为 PatchEmbed 是并行的
+        tokens_seq = self._extract_spatial(x_chunk) # (B, T, N, D)
         
-        # 2. Transient
-        x_trans = self.trans_extractor.forward_inference(tokens, self.cls_embed_on)
-        x_trans = self.norm(x_trans)
+        chunk_logits_list = []
         
-        # 3. Mamba Step
-        z = self.tess_encoder.step(x_long, x_trans)
+        # 2. 内部时间步循环 (Internal Step-by-Step Loop)
+        for t in range(T):
+            # === Slice Current Frame ===
+            x_curr_tokens = tokens_seq[:, t, :, :] # (B, N, D)
+            
+            # A. Long-term Feature
+            if self.pool_type == 'cls' and self.cls_embed_on:
+                x_long = x_curr_tokens[:, 0, :]
+            else:
+                start_idx = 1 if self.cls_embed_on else 0
+                x_long = x_curr_tokens[:, start_idx:, :].mean(dim=1)
+            x_long = self.norm(x_long) # (B, D)
+            
+            # B. Transient Feature (Updates Internal Buffer)
+            x_trans = self.trans_extractor.forward_inference(x_curr_tokens, self.cls_embed_on)
+            x_trans = self.norm(x_trans) # (B, D)
+            
+            # C. Mamba Step (Updates Internal SSM State)
+            # step 接受 (B, D)
+            z_step = self.tess_encoder.step(x_long, x_trans) # (B, D)
+            
+            # D. Head (DPPE Evolution)
+            # prev_probs 初始来自参数，后续来自上一步 loop 的输出
+            logits_step, _, _ = self.head(z_step, prev_probs) # (B, C)
+            
+            chunk_logits_list.append(logits_step)
+            
+            # Update prev_probs for next step (t+1)
+            prev_probs = F.softmax(logits_step, dim=-1)
+            
+        # 3. 堆叠结果
+        chunk_logits = torch.stack(chunk_logits_list, dim=1) # (B, T, C)
         
-        # 4. Head
-        logits, _, _ = self.head(z, prev_probs)
-        return logits
+        return chunk_logits, prev_probs
 
 # =============================================================================
 # 6. Loss Function
@@ -529,9 +561,9 @@ if __name__ == "__main__":
     print("Loss:", loss.item())
     
     # Inference Step
-    # model.eval()
-    # model.empty_cache()
-    # frame = torch.randn(2, 3, 224, 224)
-    # prev_prob = torch.zeros(2, cfg.MODEL.NUM_CLASSES)
-    # step_logits = model.stream_inference(frame, prev_prob) # need to load 3 frames!
-    # print("Inference Logits:", step_logits.shape)
+    model.eval()
+    model.empty_cache()
+    frame_chunk = torch.randn(1, 3, 3, 224, 224)
+    prev_prob = torch.zeros(1, cfg.MODEL.NUM_CLASSES)
+    step_logits = model.stream_inference(frame_chunk, prev_prob) # need to load 3 frames!
+    print("Inference Logits:", step_logits.shape)
