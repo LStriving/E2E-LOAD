@@ -1,9 +1,7 @@
-from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import einops
-import pdb
 
 if __name__ == '__main__':
     import os
@@ -31,11 +29,15 @@ except ImportError:
     class Mamba(nn.Module):
         def __init__(self, d_model, d_state=16, d_conv=4, expand=2):
             super().__init__()
-            self.linear = nn.Linear(d_model, d_model)
+            self.in_proj = nn.Linear(d_model, d_model)
+            self.d_model = d_model
+            self.d_state = d_state
+            self.expand = expand
+            self.d_conv = d_conv
         def forward(self, x):
-            return self.linear(x)
+            return self.in_proj(x)
         def step(self, x, conv_state, ssm_state):
-            return self.linear(x), conv_state, ssm_state
+            return self.in_proj(x), conv_state, ssm_state
 
 # =============================================================================
 # 2. 瞬态特征提取器 (TransientExtractor)
@@ -285,7 +287,6 @@ class DPPE_Head(nn.Module):
             # 应用转移矩阵 A: previous_state @ A
             context = torch.matmul(prev_probs, self.transition_matrix)
 
-        # pdb.set_trace()
         delta_p = self.evolve_mlp(torch.cat([z_t, context], dim=-1)) # (B, T, D)
         
         # Dynamic Score (using query refinement trick)
@@ -362,7 +363,6 @@ class Pro2Mamba(nn.Module):
         Input: (B, C, T, H, W)
         Output: Tokens (B, T, N, D)
         """
-        pdb.set_trace()
         work_inputs, bcthw_work = self.patch_embed(x, keep_spatial=True)  
         B, C, T_work, H, W = list(bcthw_work) 
         work_inputs = einops.rearrange(work_inputs, "b c t h w -> (b t) (h w) c")  # torch.Size([64, 3136, 96])
@@ -434,11 +434,10 @@ class Pro2Mamba(nn.Module):
         # 1. 批量提取空间特征 (Batch Spatial Extraction)
         # 这样比在循环里做 embedding 更快，因为 PatchEmbed 是并行的
         tokens_seq = self._extract_spatial(x_chunk) # (B, T, N, D)
-        
         chunk_logits_list = []
         
         # 2. 内部时间步循环 (Internal Step-by-Step Loop)
-        for t in range(T):
+        for t in range(tokens_seq.shape[1]):
             # === Slice Current Frame ===
             x_curr_tokens = tokens_seq[:, t, :, :] # (B, N, D)
             
@@ -565,5 +564,5 @@ if __name__ == "__main__":
     model.empty_cache()
     frame_chunk = torch.randn(1, 3, 3, 224, 224)
     prev_prob = torch.zeros(1, cfg.MODEL.NUM_CLASSES)
-    step_logits = model.stream_inference(frame_chunk, prev_prob) # need to load 3 frames!
-    print("Inference Logits:", step_logits.shape)
+    step_logits, _ = model.stream_inference(frame_chunk, prev_prob) # need to load 3 frames!
+    print("Inference Logits:", step_logits.shape, step_logits)
