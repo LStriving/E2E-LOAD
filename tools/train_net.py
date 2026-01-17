@@ -86,7 +86,7 @@ def train_epoch(
         misc.frozen_bn_stats(model)
     # Explicitly declare reduction to mean.
     loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(
-        reduction="mean", ignore_index=cfg.DATA.IGNORE_INDEX
+        reduction="mean", ignore_index=cfg.DATA.IGNORE_INDEX, cfg=cfg,
     )
     
     for cur_iter, items in enumerate(train_loader):
@@ -282,7 +282,7 @@ def eval_epoch(
     # Evaluation mode enabled. The running stats would not be updated.
     model.eval()
 
-    loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(reduction="mean")
+    loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(reduction="mean", cfg=cfg)
 
     val_meter.iter_tic() 
 

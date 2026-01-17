@@ -15,7 +15,7 @@ from pytorchvideo.losses.soft_target_cross_entropy import (
 )
 
 class ContrastiveLoss(nn.Module):
-    def __init__(self, reduction="mean"):
+    def __init__(self, reduction="mean", *args, **kwargs):
         super(ContrastiveLoss, self).__init__()
         self.reduction = reduction
 
@@ -32,7 +32,7 @@ class MultipleMSELoss(nn.Module):
     Compute multiple mse losses and return their average.
     """
 
-    def __init__(self, reduction="mean"):
+    def __init__(self, reduction="mean", *args, **kwargs):
         """
         Args:
             reduction (str): specifies reduction to apply to the output. It can be
@@ -65,7 +65,7 @@ class MultipleMSELoss(nn.Module):
 
 class BinaryCrossEntropyLoss(nn.Module):
 
-    def __init__(self, reduction='mean', ignore_index=-100):
+    def __init__(self, reduction='mean', ignore_index=-100, *args, **kwargs):
         super(BinaryCrossEntropyLoss, self).__init__()
 
         self.criterion = nn.BCEWithLogitsLoss(reduction=reduction)
@@ -85,7 +85,7 @@ class BinaryCrossEntropyLoss(nn.Module):
             return self.criterion(input, target)
 
 class MultipCrossEntropyLoss(nn.Module):
-    def __init__(self, reduction="mean", ignore_index=-100):
+    def __init__(self, reduction="mean", ignore_index=-100, *args, **kwargs):
         super(MultipCrossEntropyLoss, self).__init__()
 
         self.reduction = reduction
@@ -126,7 +126,7 @@ class MultipCrossEntropyLoss(nn.Module):
 class EQLv2Loss(nn.Module):
 
     def __init__(self, gamma=12, mu=8, alpha=4.0, reduction='mean', ignore_index=None,
-                 num_classes=3806):
+                 num_classes=3806, *args, **kwargs):
         super(EQLv2Loss, self).__init__()
         self.num_classes = num_classes - 1
 
@@ -189,7 +189,7 @@ class EQLv2Loss(nn.Module):
         return pos_w, neg_w
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2.0, reduction='mean', ignore_index=-100):
+    def __init__(self, alpha=0.25, gamma=2.0, reduction='mean', ignore_index=-100, *args, **kwargs):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -198,6 +198,53 @@ class FocalLoss(nn.Module):
     def forward(self, input, target):
         return sigmoid_focal_loss(input, target, self.alpha, self.gamma, self.reduction)
     
+class Pro2Loss(nn.Module):
+    def __init__(self, cfg, reduction='none', ignore_index=None):
+        super().__init__()
+        
+        self.margin = getattr(cfg.MODEL, 'LOSS_MARGIN', 0.1)
+        self.lambda_proc = getattr(cfg.MODEL, 'LOSS_LAMBDA', 0.1)
+            
+        self.ce_loss = nn.CrossEntropyLoss(reduction='none')
+
+    def forward(self, output_dict, targets, boundary_mask=None):
+        """
+        targets: (B, T)
+        boundary_mask: (B, T) or None
+        """
+        logits = output_dict['logits']
+        B, T, C = logits.shape
+        
+        # 1. Boundary-Aware CE
+        loss_cls = self.ce_loss(logits.reshape(-1, C), targets.reshape(-1)).view(B, T)
+        if boundary_mask is not None:
+            weights = 1.0 + boundary_mask * 1.0 # 边界处权重加倍
+            loss_cls = (loss_cls * weights).mean()
+        else:
+            loss_cls = loss_cls.mean()
+            
+        # 2. Procedural Contrastive Loss
+        # Flatten
+        z = output_dict['dynamic_z'].view(-1, output_dict['dynamic_z'].shape[-1]) # (N, D)
+        p = output_dict['prototypes'] # (C, D)
+        y = targets.view(-1)
+        
+        # Cosine Similarity
+        sim = torch.matmul(z, p.t()) # (N, C)
+        
+        # Pos Sim
+        pos_mask = F.one_hot(y, num_classes=C).bool()
+        pos_sim = sim[pos_mask]
+        
+        # Neg Sim (Hard Negative)
+        neg_sim = sim.clone()
+        neg_sim[pos_mask] = -float('inf')
+        hard_neg_sim, _ = neg_sim.max(dim=1)
+        
+        loss_proc = F.relu(self.margin + hard_neg_sim - pos_sim).mean()
+        
+        return loss_cls + self.lambda_proc * loss_proc, {"cls": loss_cls.item(), "proc": loss_proc.item()}
+
 
 @torch.jit.script
 def sigmoid_focal_loss(
@@ -261,6 +308,7 @@ _LOSSES = {
     "mse": nn.MSELoss,
     "multi_mse": MultipleMSELoss,
     "multi_ce": MultipCrossEntropyLoss,
+    "pro2": Pro2Loss,
 }
 
 
