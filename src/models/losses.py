@@ -199,52 +199,91 @@ class FocalLoss(nn.Module):
         return sigmoid_focal_loss(input, target, self.alpha, self.gamma, self.reduction)
     
 class Pro2Loss(nn.Module):
-    def __init__(self, cfg, reduction='none', ignore_index=None):
+    def __init__(self, cfg, reduction='none', ignore_index=-100):
         super().__init__()
         
-        self.margin = getattr(cfg.MODEL, 'LOSS_MARGIN', 0.1)
-        self.lambda_proc = getattr(cfg.MODEL, 'LOSS_LAMBDA', 0.1)
-            
-        self.ce_loss = nn.CrossEntropyLoss(reduction='none')
+        if cfg is not None:
+            self.margin = getattr(cfg.MODEL, 'LOSS_MARGIN', 0.1)
+            self.lambda_proc = getattr(cfg.MODEL, 'LOSS_LAMBDA', 0.1)
+            self.num_classes = cfg.MODEL.NUM_CLASSES
+        else:
+            self.margin = 0.1
+            self.lambda_proc = 0.1
+            self.num_classes = 7
+
+        self.ce_loss = nn.CrossEntropyLoss(reduction='none', ignore_index=ignore_index)
 
     def forward(self, output_dict, targets, boundary_mask=None):
         """
-        targets: (B, T)
+        output_dict: {'logits': (B, T, C), 'dynamic_z': (B, T, D), 'prototypes': (C, D)}
+        targets: (B, T) Long Tensor (Indices) or (B, T, C)
         boundary_mask: (B, T) or None
         """
         logits = output_dict['logits']
+        dynamic_z = output_dict['dynamic_z']
+        prototypes = output_dict['prototypes']
+        
+        # Ensure targets match logits shape (B, T)
+        if targets.dim() > 2: # If targets are one-hot (B, T, C), convert to indices
+            targets = targets.argmax(dim=-1)
+        
+        # Reshape for CE Loss: (N, C) vs (N)
         B, T, C = logits.shape
+        flat_logits = logits.reshape(-1, C)
+        flat_targets = targets.reshape(-1)
         
-        # 1. Boundary-Aware CE
-        loss_cls = self.ce_loss(logits.reshape(-1, C), targets.reshape(-1)).view(B, T)
+        # 1. Boundary-Aware CE Loss
+        ce_loss_raw = self.ce_loss(flat_logits, flat_targets).view(B, T)
+        
         if boundary_mask is not None:
-            weights = 1.0 + boundary_mask * 1.0 # 边界处权重加倍
-            loss_cls = (loss_cls * weights).mean()
+            weights = 1.0 + boundary_mask * 1.0 
+            loss_cls = (ce_loss_raw * weights)
         else:
-            loss_cls = loss_cls.mean()
-            
-        # 2. Procedural Contrastive Loss
-        # Flatten
-        z = output_dict['dynamic_z'].view(-1, output_dict['dynamic_z'].shape[-1]) # (N, D)
-        p = output_dict['prototypes'] # (C, D)
-        y = targets.view(-1)
-        
-        # Cosine Similarity
-        sim = torch.matmul(z, p.t()) # (N, C)
-        
-        # Pos Sim
-        pos_mask = F.one_hot(y, num_classes=C).bool()
-        pos_sim = sim[pos_mask]
-        
-        # Neg Sim (Hard Negative)
-        neg_sim = sim.clone()
-        neg_sim[pos_mask] = -float('inf')
-        hard_neg_sim, _ = neg_sim.max(dim=1)
-        
-        loss_proc = F.relu(self.margin + hard_neg_sim - pos_sim).mean()
-        
-        return loss_cls + self.lambda_proc * loss_proc, {"cls": loss_cls.item(), "proc": loss_proc.item()}
+            loss_cls = ce_loss_raw
 
+        # Apply reduction
+        if self.reduction == 'mean':
+            if self.ignore_index >= 0:
+                valid_mask = flat_targets != self.ignore_index
+                loss_cls = loss_cls.view(-1)[valid_mask].mean()
+            else:
+                loss_cls = loss_cls.mean()
+        elif self.reduction == 'sum':
+            loss_cls = loss_cls.sum()
+
+        # 2. Procedural Contrastive Loss (Triplet-like)
+        # Flatten features
+        z = dynamic_z.reshape(-1, dynamic_z.shape[-1]) # (N, D)
+        p = prototypes # (C, D)
+        y = flat_targets # (N,)
+
+        # Filter ignore_index for contrastive loss
+        if self.ignore_index >= 0:
+            valid_mask = y != self.ignore_index
+            z = z[valid_mask]
+            y = y[valid_mask]
+
+        if z.shape[0] > 0:
+            # Cosine Similarity
+            sim = torch.matmul(z, p.t()) # (N_valid, C)
+            
+            # Pos Sim
+            pos_mask = F.one_hot(y, num_classes=self.num_classes).bool()
+            pos_sim = sim[pos_mask] # (N_valid,)
+            
+            # Neg Sim (Hard Negative Mining)
+            neg_sim = sim.clone()
+            neg_sim[pos_mask] = -float('inf')
+            hard_neg_sim, _ = neg_sim.max(dim=1) # (N_valid,)
+            
+            loss_proc = F.relu(self.margin + hard_neg_sim - pos_sim).mean()
+        else:
+            loss_proc = torch.tensor(0.0, device=z.device)
+
+        total_loss = loss_cls + self.lambda_proc * loss_proc
+        
+        # Return tuple to match expectation of unpacking in train loop
+        return total_loss, {"cls": loss_cls, "proc": loss_proc}
 
 @torch.jit.script
 def sigmoid_focal_loss(

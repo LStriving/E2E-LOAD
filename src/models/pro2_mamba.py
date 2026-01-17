@@ -99,7 +99,7 @@ class Pro2Mamba(nn.Module):
     def forward(self, x, labels=None):
         """
         x: (B, C, T, H, W)
-        labels: (B, T) Optional, for Training Context (Teacher Forcing)
+        labels: (B, T) Optional, for Training Context (Teacher Forcing) or (B, T, C)
         """
         tokens = self._extract_spatial(x) # (B, T, N, D)
         
@@ -126,8 +126,9 @@ class Pro2Mamba(nn.Module):
         # 4. Head
         prev_probs = None
         if labels is not None:
-            # Construct Shifted One-Hot Context
-            one_hot = F.one_hot(labels, num_classes=self.head.num_classes).float()
+            if labels.dims() == 2:
+                # Construct Shifted One-Hot Context
+                one_hot = F.one_hot(labels, num_classes=self.head.num_classes).float()
             prev_probs = torch.roll(one_hot, shifts=1, dims=1)
             prev_probs[:, 0, :] = 0
             

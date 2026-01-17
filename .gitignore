@@ -18,3 +18,4 @@ ckpt/
 debug_vis
 remote_scripts/
 outputs/
+tmp/

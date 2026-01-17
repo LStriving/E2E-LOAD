@@ -13,6 +13,7 @@ from fvcore.nn.precise_bn import get_bn_modules, update_bn_stats
 
 import src.models.losses as losses
 import src.models.optimizer as optim
+from src.utils.boudary_mask import generate_boundary_mask
 import src.utils.checkpoint as cu
 import src.utils.distributed as du
 import src.utils.logging as logging
@@ -60,10 +61,8 @@ def train_epoch(
     """
     # Enable train mode.
     model.train()
-    # model = torch.compile(model)
     train_meter.iter_tic()
     data_size = len(train_loader) 
-    # pdb.set_trace() 
     if cfg.MIXUP.ENABLE: 
         mixup_fn = MixUp(
             mixup_alpha=cfg.MIXUP.ALPHA,
@@ -75,7 +74,6 @@ def train_epoch(
         )
 
     if cfg.AUG.CURRENT.MIX.ENABLE:
-
         clipmix_fn = ClipMix(
             mixup_alpha=cfg.AUG.CURRENT.MIX.ALPHA,
             mix_prob=cfg.AUG.CURRENT.MIX.PROB,
@@ -144,38 +142,59 @@ def train_epoch(
 
 
         with torch.cuda.amp.autocast(enabled=cfg.TRAIN.MIXED_PRECISION):
-           
             perform_backward = True
             optimizer.zero_grad()
 
-            if cfg.MASK.ENABLE:
-                preds, labels = model(inputs) # ? 
+            # === Forward Pass Branching ===
+            if cfg.MODEL.ARCH == 'Pro2Mamba':
+                # Pass labels_indices for Teacher Forcing / Context
+                preds = model(work_frames, labels=labels)
+            elif cfg.MASK.ENABLE:
+                preds, labels = model(work_frames)
             elif cfg.MODEL.LONG_MEMORY_ENABLE:
-                preds = model(work_frames, long_frames,long_key_padding_mask)
+                preds = model(work_frames, long_frames, long_key_padding_mask)
             else:
                 preds = model(work_frames)
             
-            # Backward the Loss;
-            preds = preds.reshape(-1, cfg.DATA.NUM_CLASSES)
-            labels = labels.reshape(-1, cfg.DATA.NUM_CLASSES)
-            
-            labels_num = labels.sum(-1, keepdims=True)
-            labels_mask = labels>0
+            # === Loss Calculation Branching ===
+            if isinstance(preds, dict) and 'logits' in preds:
+                # Case: Pro2Mamba (Returns Dict)
+                # Pro2Loss expects Dict and Index Labels
+                # No reshaping needed here, Pro2Loss handles it
+                with torch.no_grad():
+                    width = cfg.MODEL.get('BOUNDARY_WIDTH', 2)
+                    boundary_mask = generate_boundary_mask(labels, 
+                                    boundary_width=width)
+                loss = loss_fun(preds, labels, boundary_mask)
+                
+                # Extract preds for metric logging (B, T, C) -> (B*T, C)
+                preds_for_meter = preds['logits'].reshape(-1, cfg.DATA.NUM_CLASSES)
+            else:
+                # Case: Standard Model (Returns Tensor)
+                preds_for_meter = preds.reshape(-1, cfg.DATA.NUM_CLASSES)
+                labels_reshaped = labels.reshape(-1, cfg.DATA.NUM_CLASSES)
+                
+                # Apply Label Smoothing / Norm for Standard Loss
+                labels_num = labels_reshaped.sum(-1, keepdims=True)
+                labels_mask = labels_reshaped > 0
 
-            if cfg.MODEL.MULTI_LABEL_SMOOTH:
-                off_value = cfg.MODEL.SMOOTH_VALUE / cfg.MODEL.NUM_CLASSES 
-                on_value = - cfg.MODEL.SMOOTH_VALUE + off_value 
+                if cfg.MODEL.MULTI_LABEL_SMOOTH:
+                    off_value = cfg.MODEL.SMOOTH_VALUE / cfg.MODEL.NUM_CLASSES 
+                    on_value = - cfg.MODEL.SMOOTH_VALUE + off_value 
+                    labels_reshaped[labels_mask] += on_value
+                    labels_reshaped[~labels_mask] += off_value
 
-                labels[labels_mask] += on_value
-                labels[~labels_mask] += off_value
-
-            if cfg.MODEL.MULTI_LABEL_NORM:
-                labels = labels / labels_num
-            loss = loss_fun(preds, labels)
+                if cfg.MODEL.MULTI_LABEL_NORM:
+                    labels_reshaped = labels_reshaped / labels_num
+                    
+                loss = loss_fun(preds_for_meter, labels_reshaped)
 
         loss_extra = None
         if isinstance(loss, (list, tuple)):
-            loss, loss_extra = loss 
+            loss, loss_extra = loss
+            # Convert dictionary to list of values for current logging infra
+            if isinstance(loss_extra, dict):
+                loss_extra = list(loss_extra.values())
 
         # check Nan Loss.
         misc.check_nan_losses(loss)
@@ -247,6 +266,12 @@ def train_epoch(
                 global_step=data_size * cur_epoch
                 + cur_iter, 
             )
+            # Optional: Log Pro2Loss specific components
+            if loss_extra is not None and cfg.MODEL.ARCH == 'Pro2Mamba':
+                writer.add_scalars(
+                    {"Train/cls_loss": loss_extra[0], "Train/proc_loss": loss_extra[1]},
+                    global_step=data_size * cur_epoch + cur_iter,
+                )
         train_meter.iter_toc()  # do measure allreduce for this meter
         train_meter.log_iter_stats(cur_epoch, cur_iter)
         torch.cuda.synchronize()
@@ -260,7 +285,6 @@ def train_epoch(
     # Log epoch stats.
     train_meter.log_epoch_stats(cur_epoch)
     train_meter.reset() 
-
 
 @torch.no_grad()
 def eval_epoch(
@@ -320,10 +344,21 @@ def eval_epoch(
             preds = model(work_frames)
             
 
-        preds = preds.reshape(-1, cfg.DATA.NUM_CLASSES)
-        labels = labels.reshape(-1, cfg.DATA.NUM_CLASSES)
-        
-        val_loss = loss_fun(preds, labels) 
+        # === Handle Outputs ===
+        if isinstance(preds, dict) and 'logits' in preds:
+            # Pro2Mamba
+            preds_tensor = preds['logits'] # (B, T, C)
+            val_loss = loss_fun(preds, labels) # Returns (loss, dict)
+            if isinstance(val_loss, (tuple, list)):
+                val_loss = val_loss[0] # Just take total loss
+            preds = preds_tensor
+            preds_reshaped = preds_tensor.reshape(-1, cfg.DATA.NUM_CLASSES)
+            labels_reshaped = labels.reshape(-1, cfg.DATA.NUM_CLASSES) # Keep One-Hot for Metrics if needed
+        else:
+            # Standard
+            preds_reshaped = preds.reshape(-1, cfg.DATA.NUM_CLASSES)
+            labels_reshaped = labels.reshape(-1, cfg.DATA.NUM_CLASSES)
+            val_loss = loss_fun(preds_reshaped, labels_reshaped)
 
         if cfg.NUM_GPUS > 1:
             val_loss = du.all_reduce([val_loss]) 
@@ -343,10 +378,9 @@ def eval_epoch(
             ),  # If running  on CPU (cfg.NUM_GPUS == 1), use 1 to represent 1 CPU.
         )
         # write to tensorboard format if available.
-
-        if writer is not None:  # what's this for?
+        if writer is not None: 
             writer.add_scalars(
-                {"Val/Loss": loss},
+                {"Val/Loss": val_loss},
                 global_step=len(val_loader) * cur_epoch + cur_iter,
             )
 

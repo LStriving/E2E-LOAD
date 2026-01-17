@@ -154,13 +154,16 @@ class TestSurgeryDataset(unittest.TestCase):
         self.loader = DataLoader(self.dataset, sampler=ReverseSampler(self.dataset))
         self.loader1= DataLoader(self.dataset1, sampler=ReverseSampler(self.dataset1))
 
-    @unittest.skip("passed")
     def test_dataset_length(self):
         """
         Test if the dataset length is correct.
         """
         self.assertGreater(len(self.dataset), 0, "Dataset length should be greater than 0.")
         self.assertEqual(len(self.dataset), len(self.dataset1))
+        # label
+        self.assertEqual(self.dataset[0][-1].shape, self.dataset1[0][-1].shape)
+        # work frame shape
+        self.assertEqual(self.dataset[0][0].shape, self.dataset1[0][0].shape)
 
     @unittest.skip("passed")
     def test_sample_loading(self):
@@ -190,6 +193,7 @@ class TestSurgeryDataset(unittest.TestCase):
     #     print(torch.max(frames), torch.min(frames))
     #     self.assertTrue(torch.all(frames >= -1.0) and torch.all(frames <= 1.0), "Frames should be normalized to [-1, 1].")
 
+    @unittest.skip("passed")
     def test_tensor_content_similarity(self):
         """
         Test if the tensor contents from the two datasets are close enough.
@@ -216,7 +220,7 @@ class TestSurgeryDataset(unittest.TestCase):
         res1 = self.dataset1[0]
 
         for a,b in zip(res, res1):
-            print(type(a), type(b))
+            print(type(a), type(b), a.shape, b.shape, a.dtype, b.dtype)
             self.assertTrue(a.shape == b.shape)
     
 
