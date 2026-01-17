@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 """Logging."""
-
+import numpy as np
 import atexit
 import builtins
 import decimal
@@ -90,7 +90,7 @@ def log_json_stats(stats, output_dir=None):
         stats (dict): a dictionary of statistical information to log.
     """
     stats = {
-        k: decimal.Decimal("{:.5f}".format(v)) if isinstance(v, float) else v
+        k: decimal.Decimal("{:.5f}".format(v)) if isinstance(v, float) or isinstance(v, np.float32) else v
         for k, v in stats.items()
     }
     json_stats = simplejson.dumps(stats, sort_keys=True, use_decimal=True)

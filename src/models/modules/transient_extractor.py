@@ -78,10 +78,19 @@ class TransientExtractor(nn.Module):
         
         diffs = []
         for k in self.dilations:
-            # Padding history for causal convolution
-            pad = x_spatial[:, :1].repeat(1, k, 1, 1)
-            padded = torch.cat([pad, x_spatial], dim=1)
-            diff = x_spatial - padded[:, :T] # (B, T, N_s, D)
+            # 逻辑：diff[t] = x[t] - x[t-k]
+            # 当 t < k 时，我们假设 x[t-k] = x[0] (Padding 逻辑)
+            
+            # 1. 正常部分 (t >= k): 使用切片，零拷贝
+            # x_spatial[:, k:, ...]  减去  x_spatial[:, :-k, ...]
+            diff_main = x_spatial[:, k:, :] - x_spatial[:, :-k, :] 
+            
+            # 2. 头部部分 (t < k): 需要减去 x[0]
+            # x_spatial[:, :k, ...] 减去 x_spatial[:, 0:1, ...] (广播)
+            diff_head = x_spatial[:, :k, :] - x_spatial[:, 0:1, :]
+            
+            # 3. 拼接 (只在 T 维度拼接一次，比 cat(repeat) 快)
+            diff = torch.cat([diff_head, diff_main], dim=1)
             diffs.append(diff)
             
         # 1. Gating Ablation

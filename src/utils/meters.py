@@ -652,11 +652,24 @@ class ListMeter(object):
         self.total = np.zeros_like(self.total)
         self.count = 0
 
+    def _to_numpy(self, value):
+        # Case 1: Value is a single Pytorch Tensor
+        if isinstance(value, torch.Tensor):
+            return value.detach().cpu().numpy()
+        
+        # Case 2: Value is a list or tuple (might contain tensors)
+        elif isinstance(value, (list, tuple)):
+            # Recursively convert every item in the list
+            return np.array([self._to_numpy(v) for v in value])
+        
+        # Case 3: Value is already numpy or a scalar
+        return np.array(value)
+
     def add_value(self, value):
         """
         Add a new list value to the meter.
         """
-        self.list = np.array(value)
+        self.list = self._to_numpy(value)
         self.count += 1
         self.total += self.list
 

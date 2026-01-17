@@ -12,6 +12,7 @@ python -m pip install "git+https://github.com/facebookresearch/pytorchvideo.git"
 python -m pip install 'git+https://github.com/facebookresearch/fvcore.git' 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 conda install ffmpeg==4.2.2 -y
 
+python -m pip install mamba-ssm==2.3.0 causal-conv1d==1.6.0 --no-build-isolation -v
 python -m pip install -e ./detectron2
 python -m pip install -e ./slowfast
 cd slowfast

@@ -210,7 +210,8 @@ class Pro2Loss(nn.Module):
             self.margin = 0.1
             self.lambda_proc = 0.1
             self.num_classes = 7
-
+        self.reduction = reduction
+        self.ignore_index = ignore_index
         self.ce_loss = nn.CrossEntropyLoss(reduction='none', ignore_index=ignore_index)
 
     def forward(self, output_dict, targets, boundary_mask=None):

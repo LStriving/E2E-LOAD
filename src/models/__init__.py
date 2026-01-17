@@ -7,3 +7,4 @@ from .custom_video_model_builder import *  # noqa
 from .masked import MaskMViT  # noqa
 
 from .online_video_model_builder import *  
+from .pro2_mamba import *

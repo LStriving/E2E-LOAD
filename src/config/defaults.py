@@ -401,7 +401,6 @@ _C.MODEL = CfgNode()
 _C.MODEL.ARCH = "slowfast"
 
 
-
 # Model name
 _C.MODEL.MODEL_NAME = "SlowFast"
 
@@ -484,6 +483,35 @@ _C.MODEL.SMOOTH_VALUE = 0.1
 _C.MODEL.SHARED_CLASSFIER = True
 
 _C.MODEL.LONG_MASK_ENABLE = False
+
+## PRO2MAMBA
+_C.MODEL.BOUNDARY_WIDTH = -1 # >-1: enable
+
+_C.MODEL.LOSS_MARGIN = 0.1
+
+_C.MODEL.LOSS_LAMBDA = 0.1
+
+_C.MODEL.DPPE_LAMBDA = 0.5
+
+# ddpe
+
+_C.MODEL.PRO2HEAD_MODE = 'dual' # static, dynamic, dual
+
+_C.MODEL.PRO2PRIOR_MODE = None # none, learnable
+
+# dual stream mamba
+_C.MODEL.MAMBA_LAYERS = 3
+_C.MODEL.MAMBA_STATE = 16
+_C.MODEL.MAMBA_CONV = 4
+_C.MODEL.MAMBA_EXPAND = 2
+
+# Transient extractor
+_C.MODEL.ENABLE_TRANSIENT = True
+_C.MODEL.DILATION_RATES = [1, 6, 12]
+_C.MODEL.TRANSIENT_GATING = 'spatial_stat' # spatial_stat/mlp
+
+_C.MODEL.INPUT_LABEL = False
+
 
 # -----------------------------------------------------------------------------
 # MViT options

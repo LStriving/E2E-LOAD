@@ -13,8 +13,8 @@ if __name__ == '__main__':
 
 import src.utils.logging as logging
 
-from build import MODEL_REGISTRY
-import stem_helper
+from .build import MODEL_REGISTRY
+from . import stem_helper
 from src.models.modules import SMViT, TransientExtractor, DualStreamMamba, DPPE_Head
 
 
@@ -46,6 +46,22 @@ class Pro2Mamba(nn.Module):
             padding=cfg.MVIT.PATCH_PADDING,
             conv_2d=self.use_2d_patch, 
         )  
+        #### same logic as `E2E-LOAD`
+        self.use_2d_patch = (
+            cfg.MVIT.PATCH_2D
+        )  
+        self.patch_stride = cfg.MVIT.PATCH_STRIDE  
+        if self.use_2d_patch:
+            self.patch_stride = [1] + self.patch_stride
+        self.T_work = cfg.MODEL.WORK_MEMORY_NUM_SAMPLES  
+
+        self.H = (
+            cfg.DATA.TRAIN_CROP_SIZE // self.patch_stride[1]
+        )   
+        self.W = (
+            cfg.DATA.TRAIN_CROP_SIZE // self.patch_stride[2]
+        ) 
+        cfg.MVIT.SPATIAL.PATCH_DIMS_WORK = [self.T_work, self.H, self.W]
         self.spatial_mvit = SMViT(cfg)
         
         if self.cls_embed_on:
@@ -126,10 +142,10 @@ class Pro2Mamba(nn.Module):
         # 4. Head
         prev_probs = None
         if labels is not None:
-            if labels.dims() == 2:
+            if labels.dim() == 2:
                 # Construct Shifted One-Hot Context
-                one_hot = F.one_hot(labels, num_classes=self.head.num_classes).float()
-            prev_probs = torch.roll(one_hot, shifts=1, dims=1)
+                labels = F.one_hot(labels, num_classes=self.head.num_classes)
+            prev_probs = torch.roll(labels.float(), shifts=1, dims=1)
             prev_probs[:, 0, :] = 0
             
         logits, dyn_z, p_base = self.head(z, prev_probs)

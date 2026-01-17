@@ -2,10 +2,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 """Train a video classification model."""
-import pdb
-
-import random
-import math
 import numpy as np
 import pprint
 import torch
@@ -25,11 +21,9 @@ from src.datasets.mixup import MixUp
 from src.datasets.clipmix import ClipMix
 from src.models import build_model
 from src.models.contrastive import (
-    contrastive_forward,
     contrastive_parameter_surgery,
 )
 from src.utils.meters import EpochTimer, TrainMeter, ValMeter
-from src.utils.multigrid import MultigridSchedule
 from src.utils.version import get_reproducibility_info
 
 logger = logging.get_logger(__name__)
@@ -146,7 +140,7 @@ def train_epoch(
             optimizer.zero_grad()
 
             # === Forward Pass Branching ===
-            if cfg.MODEL.ARCH == 'Pro2Mamba':
+            if cfg.MODEL.INPUT_LABEL:
                 # Pass labels_indices for Teacher Forcing / Context
                 preds = model(work_frames, labels=labels)
             elif cfg.MASK.ENABLE:
@@ -158,13 +152,14 @@ def train_epoch(
             
             # === Loss Calculation Branching ===
             if isinstance(preds, dict) and 'logits' in preds:
-                # Case: Pro2Mamba (Returns Dict)
-                # Pro2Loss expects Dict and Index Labels
+                # Case: Pro2Loss expects Dict and Index Labels
                 # No reshaping needed here, Pro2Loss handles it
-                with torch.no_grad():
-                    width = cfg.MODEL.get('BOUNDARY_WIDTH', 2)
-                    boundary_mask = generate_boundary_mask(labels, 
-                                    boundary_width=width)
+                width = cfg.MODEL.get('BOUNDARY_WIDTH', -1)
+                boundary_mask = None
+                if width > -1:
+                    with torch.no_grad():
+                        boundary_mask = generate_boundary_mask(labels, 
+                                        boundary_width=width)
                 loss = loss_fun(preds, labels, boundary_mask)
                 
                 # Extract preds for metric logging (B, T, C) -> (B*T, C)
@@ -250,7 +245,7 @@ def train_epoch(
             loss,
             lr,
             grad_norm,
-            preds.shape[0]
+            preds_for_meter.shape[0] #mini batch size
             * max(
                 cfg.NUM_GPUS, 1
             ),  # If running  on CPU (cfg.NUM_GPUS == 1), use 1 to represent 1 CPU.
@@ -273,7 +268,7 @@ def train_epoch(
                     global_step=data_size * cur_epoch + cur_iter,
                 )
         train_meter.iter_toc()  # do measure allreduce for this meter
-        train_meter.log_iter_stats(cur_epoch, cur_iter)
+        train_meter.log_iter_stats(int(cur_epoch), cur_iter)
         torch.cuda.synchronize()
         train_meter.iter_tic()
 

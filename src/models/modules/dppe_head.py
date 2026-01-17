@@ -7,18 +7,17 @@ class DPPE_Head(nn.Module):
         super().__init__()
 
         dim = cfg.MVIT.TEMPORAL.EMBED_DIM
-        num_classes = cfg.MODEL.NUM_CLASSES
+        self.num_classes = cfg.MODEL.NUM_CLASSES
         self.lambda_val = getattr(cfg.MODEL, 'DPPE_LAMBDA', 0.5)
         # Ablation C: Head Type ('static', 'dynamic', 'dual')
-        self.head_mode = cfg.get('head_mode', 'dual')
+        self.head_mode = getattr(cfg.MODEL, 'PRO2HEAD_MODE', 'dual')
         assert self.head_mode in ['static', 'dynamic', 'dual']
         # Ablation C: Prior Type ('none', 'learnable')
-        self.prior_mode = cfg.get('prior_mode', 'learnable')
+        self.prior_mode = getattr(cfg.MODEL, 'PRO2PRIOR_MODE',  'learnable')
         assert self.prior_mode in [None, 'none', 'None', 'learnable']
 
-        self.num_classes = num_classes
         # Static Prototypes (Always needed for 'static' and 'dual')
-        self.static_prototypes = nn.Parameter(torch.randn(num_classes, dim))
+        self.static_prototypes = nn.Parameter(torch.randn(self.num_classes, dim))
         nn.init.orthogonal_(self.static_prototypes)
         
         # Dynamic Components (Only init if needed)
